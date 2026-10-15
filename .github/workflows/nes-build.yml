@@ -1,0 +1,78 @@
+
+name: NES Build and Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Assemble, link, and validate NES ROM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install cc65
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes cc65
+
+      - name: Check toolchain versions
+        run: |
+          ca65 --version
+          ld65 --version
+
+      - name: Assemble 6502 source
+        run: |
+          mkdir -p build
+          ca65 src/game.asm -o build/game.o
+
+      - name: Link NES ROM
+        run: |
+          ld65 -C nes.cfg -m build/game.map build/game.o -o build/game.nes
+
+      - name: Validate iNES ROM
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          rom = Path("build/game.nes").read_bytes()
+
+          if len(rom) < 16:
+              raise SystemExit("ROM is smaller than the iNES header.")
+
+          if rom[:4] != b"NES\x1a":
+              raise SystemExit("Invalid iNES magic bytes.")
+
+          prg_banks = rom[4]
+          chr_banks = rom[5]
+
+          if prg_banks == 0:
+              raise SystemExit("PRG-ROM bank count is zero.")
+
+          if (rom[7] & 0x0C) == 0x08:
+              raise SystemExit("Expected iNES 1.0, found NES 2.0.")
+
+          expected = 16 + prg_banks * 16384 + chr_banks * 8192
+
+          if len(rom) != expected:
+              raise SystemExit(
+                  f"Expected {expected} bytes, got {len(rom)}."
+              )
+
+          print(f"ROM validation passed: {len(rom)} bytes")
+          print(f"PRG-ROM banks: {prg_banks}")
+          print(f"CHR-ROM banks: {chr_banks}")
+          PY
+
+      - name: Upload ROM and linker map
+        uses: actions/upload-artifact@v4
+        with:
+          name: nes-build
+          path: |
+            build/game.nes
+            build/game.map
+          if-no-files-found: error
