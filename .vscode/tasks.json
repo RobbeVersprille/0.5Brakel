@@ -1,0 +1,46 @@
+// IMPORTANT: add cc65-snapshot-win32\bin\ directory location to your systems PATH environment variable
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build NES ROM",
+            "type": "shell",
+            "command": "ca65",
+            "args": [
+                "src/game.asm",
+                "-o",
+                "src/game.o"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Link NES ROM",
+            "type": "shell",
+            "command": "ld65",
+            "args": [
+                "-C",
+                "nes.cfg",
+                "src/game.o",
+                "-o",
+                "src/game.nes"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "Build NES ROM",
+            "dependsOrder": "sequence",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
