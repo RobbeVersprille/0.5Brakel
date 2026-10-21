@@ -1,0 +1,30 @@
+//On Windows, create a User environment variable:
+//Field	            Value
+//Variable name	    MESEN_EXE
+//Variable value	  The full path to your Mesen executable, for example C:\Path\To\Mesen.exe
+//Replace the example path with the actual location of your Mesen.exe. 
+//Then add %MESEN_EXE% to your PATH variables
+//Restart VS Code after setting the variable.
+
+//You also need Microsoft's C/C++ extension for VS Code (ms-vscode.cpptools) 
+//because this launch configuration uses the Windows native launcher, cppvsdbg.
+
+//Press Ctrl + F5 (Run Without Debugging).
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch NES ROM in Mesen",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${env:MESEN_EXE}",
+      "args": [
+        "${workspaceFolder}\\build\\game.nes"
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Build NES ROM",
+      "stopAtEntry": false,
+      "externalConsole": false
+    }
+  ]
+}
