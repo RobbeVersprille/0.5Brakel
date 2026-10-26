@@ -19,9 +19,15 @@
 
 
 .segment "ZEROPAGE"        
-    buttons:     .res 1        ; New button input from current frame
-    old_buttons: .res 1        ; Old button input from previous frame
-
+    buttons:          .res 1   ; New button input from current frame (A, B, Select, Start, Up, Down, Left, Right)
+    old_buttons:      .res 1   ; Old button input from previous frame (A, B, Select, Start, Up, Down, Left, Right)
+    selected_building .res 1   ; Keeps track of the selected "building" (faactory, depo, area, belt,....)
+    
+    flags: .res 1
+        PAUSED_FLAG    = %00000001  ; bit 0 = paused
+        BUILD_FLAG     = %00000010  ; bit 1 = build mode
+        SELECTING_FLAG = %00000100  ; bit 2 = selecting area
+    
 
 .segment "CODE"
 
@@ -42,19 +48,32 @@ reset:
     STX $2001       ; Disable rendering
     STX $4010       ; Disable DMC IRQ
 
+
 ;NOTE: Maybe we need 2 vBlank waits but not sure (Needs to be tested)    
 wait_vblank:        ; Wait for the PPU to start
     BIT $2002       ; Reads the PPU-status; bit 7 = VBlank on/off
     BPL wait_vblank ; Loop util bit 7 = nul (negative bit)
 
-    ; Initialize your game state
+    ; Initialize variables state
     LDA #$00        
     STA buttons
     STA old_buttons
+    STA selected_building
+    STA flags
+
+    JSR Main ;Main loop
 
     ; FOREVER LOOP
     forever:
         JMP forever
+
+.proc Main 
+   
+    RTS
+.endproc
+
+
+
 
 ; INTERRUPTROUTINES
 nmi:
