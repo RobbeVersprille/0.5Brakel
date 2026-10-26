@@ -21,7 +21,7 @@
 .segment "ZEROPAGE"        
     buttons:          .res 1   ; New button input from current frame (A, B, Select, Start, Up, Down, Left, Right)
     old_buttons:      .res 1   ; Old button input from previous frame (A, B, Select, Start, Up, Down, Left, Right)
-    selected_building .res 1   ; Keeps track of the selected "building" (faactory, depo, area, belt,....)
+    selected_building: .res 1   ; Keeps track of the selected "building" (faactory, depo, area, belt,....)
     
     flags: .res 1
         PAUSED_FLAG    = %00000001  ; bit 0 = paused
@@ -61,18 +61,44 @@ wait_vblank:        ; Wait for the PPU to start
     STA selected_building
     STA flags
 
-    JSR Main ;Main loop
 
     ; FOREVER LOOP
     forever:
+        JSR Main ;Main loop
         JMP forever
 
 .proc Main 
-   
+    JSR ReadController ; Read controller input
+    
     RTS
 .endproc
 
+.proc ReadController
 
+    LDA #$01              
+    STA $4016              ; Ping controller 1 to latch it's input
+
+    LDA #$00               
+    STA $4016              ; Ping controller 1 to stop latching input so reading can start
+
+    LDX #$08               ; Loop counter
+
+    LDA buttons            
+    STA old_buttons        ; Saving "old" input
+
+    LDA #$00               
+    STA buttons            ; Clearing old input
+
+readLoop:                  ; Loops 8 times to cover all input bits
+    LDA $4016              ; Read next bit
+    LSR A                  ; Put A in carry-flag
+    ROL buttons            ; Put carry-flag in buttons
+
+    DEX                    
+    BNE readLoop           ; Loop until X = 0
+
+    RTS                    ; Return to main
+.endproc
 
 
 ; INTERRUPTROUTINES
