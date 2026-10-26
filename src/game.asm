@@ -1,28 +1,26 @@
-; Besturing:
-;   A-knop       = rode achtergrond, zwart punt
-;   B-knop       = blauwe achtergrond, wit punt
-;   Pijl omhoog  = punt omhoog bewegen
-;   Pijl omlaag  = punt omlaag bewegen
-;   Pijl links   = punt naar links bewegen
-;   Pijl rechts  = punt naar rechts bewegen
+; Controlls:
+;   A-Button      =
+;   B-Button      = 
+;   UP Arrow      = 
+;   DOWN Arrow    = 
+;   LEFT Arrow    = 
+;   RIGHT Arrow   = 
+;   SELECT-Button =
+;   START-Button  =
 
-.segment "HEADER" ; Header is meestal 16 bytes        
-    .byte "NES", $1A           ; Herkenningsbytes voor een NES-ROM
-    .byte 2                    ; 2 PRG-ROM banken van 16 KB = 32 KB
-    .byte 1                    ; 1 CHR-ROM bank van 8 KB = 8 KB
-    .byte $00                  ; Mapper 0, horizontale mirroring
-    .byte $00                  ; Overige headerinstellingen 
-    .byte $00, $00, $00, $00   ; Ongebruikte headerbytes
-    .byte $00, $00, $00, $00   ; Extra ongebruikte headerbytes
+.segment "HEADER"
+    .byte "NES", $1A           ; Identification bytes for an NES ROM
+    .byte 2                    ; 2 PRG-ROM banks of 16 KB = 32 KB
+    .byte 1                    ; 1 CHR-ROM bank of 8 KB = 8 KB
+    .byte $00                  ; Mapper 0, horizontal mirroring
+    .byte $00                  ; Other header settings
+    .byte $00, $00, $00, $00   ; Unused header bytes
+    .byte $00, $00, $00, $00   ; Additional reserved header bytes
 
 
 .segment "ZEROPAGE"        
-    buttons:     .res 1        ; Bewaart de huidige controllerknoppen
-    old_buttons: .res 1        ; Bewaart de knoppen van de vorige frame
-    dot_x:       .res 1        ; Horizontale positie van het punt
-    dot_y:       .res 1        ; Verticale positie van het punt
-    bg_color:    .res 1        ; Kleur van de achtergrond
-    dot_color:   .res 1        ; Kleur van het punt
+    buttons:     .res 1        ; New button input from current frame
+    old_buttons: .res 1        ; Old button input from previous frame
 
 
 .segment "CODE"
@@ -30,54 +28,48 @@
 
 
 reset:
-    SEI             ; Disable interrupts
+    SEI             ; Disable CPU interrupts
     CLD             ; Disable decimal mode
-    LDX #$40
+
+    LDX #$40        ; Value to disable the APU-frame-IRQ (audio)
     STX $4017       ; Disable APU frame IRQ
-    LDX #$FF
+
+    LDX #$FF        ; X = #$FF
     TXS             ; Initialize stack pointer
-    INX             ; X = 0
+
+    INX             ; X = 0 (FF + 1 = 0 )
     STX $2000       ; Disable NMI
     STX $2001       ; Disable rendering
     STX $4010       ; Disable DMC IRQ
 
-    ; Wait for the PPU to start
-wait_vblank:
-    BIT $2002
-    BPL wait_vblank
+;NOTE: Maybe we need 2 vBlank waits but not sure (Needs to be tested)    
+wait_vblank:        ; Wait for the PPU to start
+    BIT $2002       ; Reads the PPU-status; bit 7 = VBlank on/off
+    BPL wait_vblank ; Loop util bit 7 = nul (negative bit)
 
     ; Initialize your game state
-    LDA #$00
+    LDA #$00        
     STA buttons
     STA old_buttons
-    STA bg_color
-    STA dot_color
 
-    ; Continue with your game initialization here
-    ; JMP main_loop
-
+    ; FOREVER LOOP
     forever:
         JMP forever
 
 ; INTERRUPTROUTINES
-; Deze routines worden momenteel niet gebruikt.
-; RTI keert terug uit een interrupt.
-
 nmi:
-    RTI                    ; Keer terug uit de NMI-interrupt
+    RTI                    ; Return from NMI-interrupt
 
 irq:
-    RTI                    ; Keer terug uit de IRQ-interrupt
+    RTI                    ; Return from IRQ-interrupt
 
 
 ; INTERRUPTVECTOR
-; De NES leest deze adressen om te weten welke routine
-; uitgevoerd moet worden bij NMI, RESET en IRQ.
-
-.segment "VECTORS"         ; Plaats de interruptvectoren op het einde van PRG-ROM
+.segment "VECTORS"
 
 .word nmi                  ; NMI-vector
 .word reset                ; RESET-vector
 .word irq                  ; IRQ/BRK-vector
 
+; CHARACTER ROM
 .segment "CHR" 
