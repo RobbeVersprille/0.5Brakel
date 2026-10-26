@@ -68,8 +68,8 @@ wait_vblank:        ; Wait for the PPU to start
         JMP forever
 
 .proc Main 
-    JSR ReadController ; Read controller input
-    
+    JSR ReadController    ; Read controller input
+    JSR HandleButtonInput ; Handles the button input and sets or calls the according flags/subroutines
     RTS
 .endproc
 
@@ -100,6 +100,112 @@ readLoop:                  ; Loops 8 times to cover all input bits
     RTS                    ; Return to main
 .endproc
 
+.proc HandleButtonInput
+        LDA buttons         ; Load button input
+    AND #%10000000      ; Isolate bit 7, A-Button
+    BEQ checkB          ; If A not pressed, skip A-Button code and check B-Button
+
+    ; A-BUTTON CODE HOLD:
+
+    LDA old_buttons     ; Load old button input
+    AND #%10000000      ; Isolate bit 7, A-Button
+    BNE checkB          ; If A was pressed, skip new A-Button press code and check B-Button
+
+    ; A-BUTTON CODE NEW PRESS:
+
+checkB:
+    LDA buttons         ; Load button input
+    AND #%01000000      ; Isolate bit 6, B-Button
+    BEQ checkSelect     ; If B not pressed, skip B-Button code and check Select-Button
+
+    ; B-BUTTON CODE HOLD:
+
+    LDA old_buttons     ; Load old button input
+    AND #%01000000      ; Isolate bit 6, B-Button
+    BNE checkSelect     ; If B was pressed, skip new B-Button press code and check Select-Button
+
+    ; B-BUTTON CODE NEW PRESS:
+
+checkSelect:
+    LDA buttons         ; Load button input
+    AND #%00100000      ; Isolate bit 5, SELECT-Button
+    BEQ checkStart      ; If SELECT not pressed, skip SELECT-Button code and check START-Button
+
+    ; SELECT-BUTTON CODE HOLD:
+
+    LDA old_buttons     ; Load old button input
+    AND #%00100000      ; Isolate bit 5, SELECT-Button
+    BNE checkStart      ; If SELECT was pressed, skip new SELECT-Button press code and check START-Button
+
+    ; SELECT-BUTTON CODE NEW PRESS:
+
+checkStart:
+    LDA buttons         ; Load button input
+    AND #%00010000      ; Isolate bit 4, START-Button
+    BEQ checkUp         ; If START not pressed, skip START-Button code and check UP-Button
+
+    ; START-BUTTON CODE HOLD:
+
+    LDA old_buttons     ; Load old button input
+    AND #%00010000      ; Isolate bit 4, START-Button
+    BNE checkUp         ; If START was pressed, skip new START-Button press code and check UP-Button
+
+    ; START-BUTTON CODE NEW PRESS:
+
+checkUp:
+    LDA buttons         ; Load button input
+    AND #%00001000      ; Isolate bit 3, UP-Button
+    BEQ checkDown       ; If UP not pressed, skip UP-Button code and check DOWN-Button
+
+    ; UP-BUTTON CODE HOLD:
+
+    LDA old_buttons     ; Load old button input
+    AND #%00001000      ; Isolate bit 3, UP-Button
+    BNE checkDown       ; If UP was pressed, skip new UP-Button press code and check DOWN-Button
+
+    ; UP-BUTTON CODE NEW PRESS:
+
+checkDown:
+    LDA buttons         ; Load button input
+    AND #%00000100      ; Isolate bit 2, DOWN-Button
+    BEQ checkLeft       ; If DOWN not pressed, skip DOWN-Button code and check LEFT-Button
+
+    ; DOWN-BUTTON CODE HOLD:
+
+    LDA old_buttons     ; Load old button input
+    AND #%00000100      ; Isolate bit 2, DOWN-Button
+    BNE checkLeft       ; If DOWN was pressed, skip new DOWN-Button press code and check LEFT-Button
+
+    ; DOWN-BUTTON CODE NEW PRESS:
+
+checkLeft:
+    LDA buttons         ; Load button input
+    AND #%00000010      ; Isolate bit 1, LEFT-Button
+    BEQ checkRight      ; If LEFT not pressed, skip LEFT-Button code and check RIGHT-Button
+
+    ; LEFT-BUTTON CODE HOLD:
+
+    LDA old_buttons     ; Load old button input
+    AND #%00000010      ; Isolate bit 1, LEFT-Button
+    BNE checkRight      ; If LEFT was pressed, skip new LEFT-Button press code and check RIGHT-Button
+
+    ; LEFT-BUTTON CODE NEW PRESS:
+
+checkRight:
+    LDA buttons         ; Load button input
+    AND #%00000001      ; Isolate bit 0, RIGHT-Button
+    BEQ inputDone       ; If RIGHT not pressed, skip RIGHT-Button code
+
+    ; RIGHT-BUTTON CODE HOLD:
+
+    LDA old_buttons     ; Load old button input
+    AND #%00000001      ; Isolate bit 0, RIGHT-Button
+    BNE inputDone       ; If RIGHT was pressed, skip new RIGHT-Button press code
+
+    ; RIGHT-BUTTON CODE NEW PRESS:
+
+    RTS ; Return to Main
+.endproc
 
 ; INTERRUPTROUTINES
 nmi:
