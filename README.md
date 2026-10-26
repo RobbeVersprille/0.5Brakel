@@ -1,5 +1,5 @@
 # 0.5Brakel
-
+![Idea](./resources/ProjectIdea.png)
 ## Code Rules
 
 - write everything in English
