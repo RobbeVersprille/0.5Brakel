@@ -101,7 +101,7 @@ readLoop:                  ; Loops 8 times to cover all input bits
 .endproc
 
 .proc HandleButtonInput
-        LDA buttons         ; Load button input
+    LDA buttons         ; Load button input
     AND #%10000000      ; Isolate bit 7, A-Button
     BEQ checkB          ; If A not pressed, skip A-Button code and check B-Button
 
@@ -139,6 +139,11 @@ checkSelect:
 
     ; SELECT-BUTTON CODE NEW PRESS:
 
+    ; Toggle build flag
+    LDA flags        ; Load flags
+    EOR #BUILD_FLAG  ; Flip bit 1 (Build flag)
+    STA flags        ; Save new state
+    
 checkStart:
     LDA buttons         ; Load button input
     AND #%00010000      ; Isolate bit 4, START-Button
@@ -151,6 +156,11 @@ checkStart:
     BNE checkUp         ; If START was pressed, skip new START-Button press code and check UP-Button
 
     ; START-BUTTON CODE NEW PRESS:
+
+    ; Toggle paused flag
+    LDA flags        ; Load flags
+    EOR #PAUSED_FLAG ; Flip bit 0 (Paused flag)
+    STA flags        ; Save new state
 
 checkUp:
     LDA buttons         ; Load button input
