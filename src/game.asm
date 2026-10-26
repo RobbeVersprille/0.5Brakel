@@ -214,6 +214,7 @@ checkRight:
 
     ; RIGHT-BUTTON CODE NEW PRESS:
 
+inputDone:
     RTS ; Return to Main
 .endproc
 
