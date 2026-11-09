@@ -9,7 +9,7 @@
 ;   START-Button  =
 
 ; Macros
-Joypad1 =  $4016; 
+JOYPAD1 =  $4016; 
 
 .segment "HEADER"
     .byte "NES", $1A           ; Identification bytes for an NES ROM
@@ -24,8 +24,16 @@ Joypad1 =  $4016;
 .segment "ZEROPAGE"        
     buttons:          .res 1   ; New button input from current frame (A, B, Select, Start, Up, Down, Left, Right)
     old_buttons:      .res 1   ; Old button input from previous frame (A, B, Select, Start, Up, Down, Left, Right)
-    selected_building: .res 1   ; Keeps track of the selected "building" (factory, depo, area, belt,....)
-    
+    selected_building_mode: .res 1  ; Keeps track of the selected "building" (factory, depo, area, belt,....) 
+        DEPOSIT_FLAG     = %00000001  ; bit 0 = Deposit
+        CONVEYER_FLAG    = %00000010  ; bit 1 = Conveyer
+        AREA_SELECT_FLAG = %00000100  ; bit 2 = Area Select
+        FACTORY_FLAG     = %00001000  ; bit 3 = Factory     
+        COLLECTION_FLAG  = %00010000  ; bit 4 = Collection    
+        PEOPLE_FLAG      = %00100000  ; bit 5 = People 
+        DESTROY_FLAG     = %01000000  ; bit 6 = Destroy
+        AREA_SELECT_FLAG = %10000000  ; bit 7 = NONE      
+
     flags: .res 1
         PAUSED_FLAG    = %00000001  ; bit 0 = paused
         BUILD_FLAG     = %00000010  ; bit 1 = build mode
@@ -62,7 +70,7 @@ wait_vblank:        ; Wait for the PPU to start
     LDA #$00        
     STA buttons
     STA old_buttons
-    STA selected_building
+    STA selected_building_mode
     STA flags
 
 
@@ -79,21 +87,38 @@ wait_vblank:        ; Wait for the PPU to start
     BIT PAUSED_FLAG ; check bit 0 of the flags is set
     BEQ End ; Game is paused
    
+    BIT BUILD_FLAG ; check bit 1 of the flags is set
+    BNE skipBuild ; Game not in build mode
+    JSR BuildMode ; Game in build mode
+skipBuild:
 
+    BIT SELECTING_FLAG ; check bit 2 of the flags is set
+    BNE skipAreaSelect ; Game not in area select mode
+    JSR AreaSelectMode ; Game in area select mode
+skipAreaSelect:
 
 end:    
     RTS
 .endproc
 
+.proc BuildMode
+; Show the cursor on the HUD
 
+RTS
+.endproc
+
+.proc AreaSelectMode
+; Show the cursor on the grid and start the resource area selection
+RTS
+.endproc
 
 .proc ReadController
 
     LDA #$01              
-    STA Joypad1              ; Ping controller 1 to latch it's input
+    STA JOYPAD1              ; Ping controller 1 to latch it's input
 
     LDA #$00               
-    STA Joypad1              ; Ping controller 1 to stop latching input so reading can start
+    STA JOYPAD1              ; Ping controller 1 to stop latching input so reading can start
 
     LDX #$08               ; Loop counter
 
@@ -104,7 +129,7 @@ end:
     STA buttons            ; Clearing old input
 
 readLoop:                  ; Loops 8 times to cover all input bits
-    LDA Joypad1              ; Read next bit
+    LDA JOYPAD1              ; Read next bit
     LSR A                  ; Put A in carry-flag
     ROL buttons            ; Put carry-flag in buttons
 
