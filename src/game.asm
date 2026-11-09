@@ -41,12 +41,13 @@ JOYPAD1 =  $4016;
         COLLECTION_FLAG  = %00010000  ; bit 4 = Collection    
         PEOPLE_FLAG      = %00100000  ; bit 5 = People 
         DESTROY_FLAG     = %01000000  ; bit 6 = Destroy
-        AREA_SELECT_FLAG = %10000000  ; bit 7 = NONE      
+        NONE_FLAG        = %10000000  ; bit 7 = NONE      
 
     flags: .res 1
-        PAUSED_FLAG    = %00000001  ; bit 0 = paused
-        BUILD_FLAG     = %00000010  ; bit 1 = build mode
-        SELECTING_FLAG = %00000100  ; bit 2 = selecting area
+        PAUSED_FLAG     = %00000001  ; bit 0 = paused
+        BUILD_MENU_FLAG = %00000010  ; bit 1 = build mode
+        BUILD_FLAG      = %00000100  ; bit 2 = is building flag
+        SELECTING_FLAG  = %00001000  ; bit 3 = selecting area
     
     
 
@@ -96,10 +97,10 @@ wait_vblank:        ; Wait for the PPU to start
     BIT #PAUSED_FLAG ; check bit 0 of the flags is set
     BEQ End ; Game is paused
    
-    BIT #BUILD_FLAG ; check bit 1 of the flags is set
-    BNE skipBuild ; Game not in build mode
+    BIT #BUILD_MENU_FLAG ; check bit 1 of the flags is set
+    BNE skipBuildMenu ; Game not in build mode
     JSR BuildMode ; Game in build mode
-skipBuild:
+skipBuildMenu:
 
     BIT #SELECTING_FLAG ; check bit 2 of the flags is set
     BNE skipAreaSelect ; Game not in area select mode
@@ -111,7 +112,19 @@ end:
 .endproc
 
 .proc BuildMode
-; Show the cursor on the HUD
+    BIT #BUILD_FLAG ; check bit 1 of the flags is set
+    BNE skipBuild ; Game not in build mode
+    JSR Build ; Game in build mode
+    RTS ; Early return no HUD logic needed when building
+
+skipBuild:
+    ; Show the cursor on the HUD
+    
+    RTS
+.endproc
+
+.proc Build
+; Build logic
 
 RTS
 .endproc
@@ -189,8 +202,10 @@ checkSelect:
 
     ; Toggle build flag
     LDA flags        ; Load flags
-    EOR #BUILD_FLAG  ; Flip bit 1 (Build flag)
+    EOR #BUILD_MENU_FLAG  ; Flip bit 1 (Build flag)
     STA flags        ; Save new state
+    LDA DEPOSIT_FLAG ; Set cursor to deposit
+    STA selected_building_mode ; Store the new flag 
     
 checkStart:
     LDA buttons         ; Load button input
