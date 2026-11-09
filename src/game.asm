@@ -24,6 +24,15 @@ JOYPAD1 =  $4016;
 .segment "ZEROPAGE"        
     buttons:          .res 1   ; New button input from current frame (A, B, Select, Start, Up, Down, Left, Right)
     old_buttons:      .res 1   ; Old button input from previous frame (A, B, Select, Start, Up, Down, Left, Right)
+        A_BUTTON      = %10000000  ; bit 0 = A
+        B_BUTTON      = %01000000  ; bit 1 = B
+        SELECT_BUTTON = %00100000  ; bit 2 = Select
+        START_BUTTON  = %00010000  ; bit 3 = Start     
+        UP_BUTTON     = %00001000  ; bit 4 = Up    
+        DOWN_BUTTON   = %00000100  ; bit 5 = Down 
+        LEFT_BUTTON   = %00000010  ; bit 6 = Left
+        RIGHT_BUTTON  = %00000001  ; bit 7 = Right    
+
     selected_building_mode: .res 1  ; Keeps track of the selected "building" (factory, depo, area, belt,....) 
         DEPOSIT_FLAG     = %00000001  ; bit 0 = Deposit
         CONVEYER_FLAG    = %00000010  ; bit 1 = Conveyer
@@ -84,15 +93,15 @@ wait_vblank:        ; Wait for the PPU to start
     JSR HandleButtonInput ; Handles the button input and sets or calls the according flags/subroutines
     
     LDA flags
-    BIT PAUSED_FLAG ; check bit 0 of the flags is set
+    BIT #PAUSED_FLAG ; check bit 0 of the flags is set
     BEQ End ; Game is paused
    
-    BIT BUILD_FLAG ; check bit 1 of the flags is set
+    BIT #BUILD_FLAG ; check bit 1 of the flags is set
     BNE skipBuild ; Game not in build mode
     JSR BuildMode ; Game in build mode
 skipBuild:
 
-    BIT SELECTING_FLAG ; check bit 2 of the flags is set
+    BIT #SELECTING_FLAG ; check bit 2 of the flags is set
     BNE skipAreaSelect ; Game not in area select mode
     JSR AreaSelectMode ; Game in area select mode
 skipAreaSelect:
@@ -141,39 +150,39 @@ readLoop:                  ; Loops 8 times to cover all input bits
 
 .proc HandleButtonInput
     LDA buttons         ; Load button input
-    AND #%10000000      ; Isolate bit 7, A-Button
+    AND #A_BUTTON      ; Isolate bit 7, A-Button
     BEQ checkB          ; If A not pressed, skip A-Button code and check B-Button
 
     ; A-BUTTON CODE HOLD:
 
     LDA old_buttons     ; Load old button input
-    AND #%10000000      ; Isolate bit 7, A-Button
+    AND #A_BUTTON      ; Isolate bit 7, A-Button
     BNE checkB          ; If A was pressed, skip new A-Button press code and check B-Button
 
     ; A-BUTTON CODE NEW PRESS:
 
 checkB:
     LDA buttons         ; Load button input
-    AND #%01000000      ; Isolate bit 6, B-Button
+    AND #B_BUTTON      ; Isolate bit 6, B-Button
     BEQ checkSelect     ; If B not pressed, skip B-Button code and check Select-Button
 
     ; B-BUTTON CODE HOLD:
 
     LDA old_buttons     ; Load old button input
-    AND #%01000000      ; Isolate bit 6, B-Button
+    AND #B_BUTTON      ; Isolate bit 6, B-Button
     BNE checkSelect     ; If B was pressed, skip new B-Button press code and check Select-Button
 
     ; B-BUTTON CODE NEW PRESS:
 
 checkSelect:
     LDA buttons         ; Load button input
-    AND #%00100000      ; Isolate bit 5, SELECT-Button
+    AND #SELECT_BUTTON  ; Isolate bit 5, SELECT-Button
     BEQ checkStart      ; If SELECT not pressed, skip SELECT-Button code and check START-Button
 
     ; SELECT-BUTTON CODE HOLD:
 
     LDA old_buttons     ; Load old button input
-    AND #%00100000      ; Isolate bit 5, SELECT-Button
+    AND #SELECT_BUTTON  ; Isolate bit 5, SELECT-Button
     BNE checkStart      ; If SELECT was pressed, skip new SELECT-Button press code and check START-Button
 
     ; SELECT-BUTTON CODE NEW PRESS:
@@ -185,13 +194,13 @@ checkSelect:
     
 checkStart:
     LDA buttons         ; Load button input
-    AND #%00010000      ; Isolate bit 4, START-Button
+    AND #START_BUTTON  ; Isolate bit 4, START-Button
     BEQ checkUp         ; If START not pressed, skip START-Button code and check UP-Button
 
     ; START-BUTTON CODE HOLD:
 
     LDA old_buttons     ; Load old button input
-    AND #%00010000      ; Isolate bit 4, START-Button
+    AND #START_BUTTON   ; Isolate bit 4, START-Button
     BNE checkUp         ; If START was pressed, skip new START-Button press code and check UP-Button
 
     ; START-BUTTON CODE NEW PRESS:
@@ -203,52 +212,52 @@ checkStart:
 
 checkUp:
     LDA buttons         ; Load button input
-    AND #%00001000      ; Isolate bit 3, UP-Button
+    AND #UP_BUTTON   ; Isolate bit 3, UP-Button
     BEQ checkDown       ; If UP not pressed, skip UP-Button code and check DOWN-Button
 
     ; UP-BUTTON CODE HOLD:
 
     LDA old_buttons     ; Load old button input
-    AND #%00001000      ; Isolate bit 3, UP-Button
+    AND #UP_BUTTON      ; Isolate bit 3, UP-Button
     BNE checkDown       ; If UP was pressed, skip new UP-Button press code and check DOWN-Button
 
     ; UP-BUTTON CODE NEW PRESS:
 
 checkDown:
     LDA buttons         ; Load button input
-    AND #%00000100      ; Isolate bit 2, DOWN-Button
+    AND #DOWN_BUTTON    ; Isolate bit 2, DOWN-Button
     BEQ checkLeft       ; If DOWN not pressed, skip DOWN-Button code and check LEFT-Button
 
     ; DOWN-BUTTON CODE HOLD:
 
     LDA old_buttons     ; Load old button input
-    AND #%00000100      ; Isolate bit 2, DOWN-Button
+    AND #DOWN_BUTTON    ; Isolate bit 2, DOWN-Button
     BNE checkLeft       ; If DOWN was pressed, skip new DOWN-Button press code and check LEFT-Button
 
     ; DOWN-BUTTON CODE NEW PRESS:
 
 checkLeft:
     LDA buttons         ; Load button input
-    AND #%00000010      ; Isolate bit 1, LEFT-Button
+    AND #LEFT_BUTTON    ; Isolate bit 1, LEFT-Button
     BEQ checkRight      ; If LEFT not pressed, skip LEFT-Button code and check RIGHT-Button
 
     ; LEFT-BUTTON CODE HOLD:
 
     LDA old_buttons     ; Load old button input
-    AND #%00000010      ; Isolate bit 1, LEFT-Button
+    AND #LEFT_BUTTON    ; Isolate bit 1, LEFT-Button
     BNE checkRight      ; If LEFT was pressed, skip new LEFT-Button press code and check RIGHT-Button
 
     ; LEFT-BUTTON CODE NEW PRESS:
 
 checkRight:
     LDA buttons         ; Load button input
-    AND #%00000001      ; Isolate bit 0, RIGHT-Button
+    AND #RIGHT_BUTTON   ; Isolate bit 0, RIGHT-Button
     BEQ inputDone       ; If RIGHT not pressed, skip RIGHT-Button code
 
     ; RIGHT-BUTTON CODE HOLD:
 
     LDA old_buttons     ; Load old button input
-    AND #%00000001      ; Isolate bit 0, RIGHT-Button
+    AND #RIGHT_BUTTON   ; Isolate bit 0, RIGHT-Button
     BNE inputDone       ; If RIGHT was pressed, skip new RIGHT-Button press code
 
     ; RIGHT-BUTTON CODE NEW PRESS:
