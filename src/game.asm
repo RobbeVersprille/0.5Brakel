@@ -70,56 +70,111 @@ reset:
     STX $2001       ; Disable rendering
     STX $4010       ; Disable DMC IRQ
 
-
-;NOTE: Maybe we need 2 vBlank waits but not sure (Needs to be tested)    
-wait_vblank:        ; Wait for the PPU to start
-    BIT $2002       ; Reads the PPU-status; bit 7 = VBlank on/off
-    BPL wait_vblank ; Loop util bit 7 = nul (negative bit)
-
     ; Initialize variables state
     LDA #$00        
     STA buttons
     STA old_buttons
     STA selected_building_mode
-    STA flags
+    STA flags     
+
+wait_vblank:        ; Wait for the PPU to start
+    BIT $2002       ; Reads the PPU-status; bit 7 = VBlank on/off
+    BPL wait_vblank ; Loop util bit 7 = nul (negative bit)
+
+vblank2:                    ; second vblank wait so the PPU is fully warmed up
+    BIT $2002
+    BPL vblank2
+
+    LDA #%10000000
+    STA $2000               ; enable NMI
+    LDA #%00001110
+    STA $2001               ; enable background rendering
 
 
     ; FOREVER LOOP
     forever:
-        JSR Main ; Main loop
+        JSR Main ; Main loop | START YOUR ADVENTURE HERE !!!!!!!!! |
         JMP forever
 
 .proc Main 
     JSR ReadController    ; Read controller input
-    JSR HandleButtonInput ; Handles the button input and sets or calls the according flags/subroutines
-    
+    JSR HandlePaused ; Handles/Updates the paused state of the game
+
     LDA flags
-    BIT #PAUSED_FLAG ; check bit 0 of the flags is set
-    BEQ End ; Game is paused
-   
-    BIT #BUILD_MENU_FLAG ; check bit 1 of the flags is set
+    AND #PAUSED_FLAG ; check bit 0 of the flags is set
+    BNE end  ; Game paused skip al other btn handling (for now)
+
+    JSR HandleButtonInput ; Handles the button input and sets or calls the according flags/subroutines
+
+    LDA flags
+    AND #BUILD_MENU_FLAG ; check bit 1 of the flags is set
     BNE skipBuildMenu ; Game not in build mode
     JSR BuildMode ; Game in build mode
+
 skipBuildMenu:
 
-    BIT #SELECTING_FLAG ; check bit 2 of the flags is set
+    LDA flags
+    AND #BUILD_MENU_FLAG ; check bit 1 of the flags is set
     BNE skipAreaSelect ; Game not in area select mode
     JSR AreaSelectMode ; Game in area select mode
 skipAreaSelect:
 
-end:    
+end:  
+    RTS
+.endproc
+
+; Handles/Updates the paused state of the game
+.proc HandlePaused
+    LDA buttons         ; Load button input
+    AND #START_BUTTON  ; Isolate bit 4, START-Button
+    BEQ end         ; If START not pressed, end
+
+    ; START-BUTTON CODE HOLD PRESS:
+
+    LDA old_buttons     ; Load old button input
+    AND #START_BUTTON   ; Isolate bit 4, START-Button
+    BNE end         ; If START was pressed, end
+
+    ; START-BUTTON CODE NEW PRESS:
+
+    ; Toggle paused flag
+    LDA flags        ; Load flags
+    EOR #PAUSED_FLAG ; Flip bit 0 (Paused flag)
+    STA flags        ; Save new state
+end:
     RTS
 .endproc
 
 .proc BuildMode
-    BIT #BUILD_FLAG ; check bit 1 of the flags is set
-    BNE skipBuild ; Game not in build mode
-    JSR Build ; Game in build mode
-    RTS ; Early return no HUD logic needed when building
+    LDA flags
+    AND #BUILD_FLAG
+    BEQ browseMenu              ; not building so move the HUD cursor
+    JSR Build
+    RTS
 
-skipBuild:
-    ; Show the cursor on the HUD
-    
+browseMenu:
+    LDA buttons
+    AND #LEFT_BUTTON
+    BEQ skipLeft                ; not pressed
+    LDA old_buttons
+    AND #LEFT_BUTTON
+    BNE skipLeft                ; held, not a new press so jump
+    LDA selected_building_mode
+    CMP #NONE_FLAG
+    BEQ skipLeft                ; already at the last option
+    ASL selected_building_mode
+skipLeft:
+    LDA buttons
+    AND #RIGHT_BUTTON
+    BEQ skipRight               ; not pressed
+    LDA old_buttons
+    AND #RIGHT_BUTTON
+    BNE skipRight               ; held, not a new press so jump
+    LDA selected_building_mode
+    CMP #DEPOSIT_FLAG
+    BEQ skipRight               ; already at the first option
+    LSR selected_building_mode
+skipRight:
     RTS
 .endproc
 
@@ -173,6 +228,16 @@ readLoop:                  ; Loops 8 times to cover all input bits
     BNE checkB          ; If A was pressed, skip new A-Button press code and check B-Button
 
     ; A-BUTTON CODE NEW PRESS:
+    LDA flags
+    AND #BUILD_MENU_FLAG
+    BEQ checkB                ; build menu closed
+    LDA flags
+    AND #BUILD_FLAG
+    BNE checkB                ; is building is set
+
+    LDA flags
+    ORA #BUILD_FLAG           ; set is building 
+    STA flags
 
 checkB:
     LDA buttons         ; Load button input
@@ -186,6 +251,7 @@ checkB:
     BNE checkSelect     ; If B was pressed, skip new B-Button press code and check Select-Button
 
     ; B-BUTTON CODE NEW PRESS:
+
 
 checkSelect:
     LDA buttons         ; Load button input
@@ -203,27 +269,13 @@ checkSelect:
     ; Toggle build flag
     LDA flags        ; Load flags
     EOR #BUILD_MENU_FLAG  ; Flip bit 1 (Build flag)
+    AND #(BUILD_FLAG ^ $FF)   ; disable is building flag 
     STA flags        ; Save new state
-    LDA DEPOSIT_FLAG ; Set cursor to deposit
+    LDA #DEPOSIT_FLAG ; Set cursor to deposit
     STA selected_building_mode ; Store the new flag 
     
 checkStart:
-    LDA buttons         ; Load button input
-    AND #START_BUTTON  ; Isolate bit 4, START-Button
-    BEQ checkUp         ; If START not pressed, skip START-Button code and check UP-Button
-
-    ; START-BUTTON CODE HOLD:
-
-    LDA old_buttons     ; Load old button input
-    AND #START_BUTTON   ; Isolate bit 4, START-Button
-    BNE checkUp         ; If START was pressed, skip new START-Button press code and check UP-Button
-
-    ; START-BUTTON CODE NEW PRESS:
-
-    ; Toggle paused flag
-    LDA flags        ; Load flags
-    EOR #PAUSED_FLAG ; Flip bit 0 (Paused flag)
-    STA flags        ; Save new state
+    ; Gets handled before the other buttons for pausing reasons
 
 checkUp:
     LDA buttons         ; Load button input
@@ -281,8 +333,55 @@ inputDone:
     RTS ; Return to Main
 .endproc
 
+.proc UpdateBackgroundColor
+    LDA $2002               ; reset the $2006 write latch
+    LDA #$3F
+    STA $2006
+    LDA #$00
+    STA $2006               ; PPU address = $3F00 (universal background color)
+
+    LDA flags
+    AND #PAUSED_FLAG        
+    BNE paused ; Jump to pause because game is paused 
+
+    LDA flags
+    AND #BUILD_FLAG      
+    BNE isBuilding ; Jump to is building because you are in the build menu and you've selected what to build (restricted by input handler)
+
+    LDA flags
+    AND #BUILD_MENU_FLAG        
+    BNE isBuildMode ; Jump to build menu because you are in the build menu and you've not selected what to build
+
+
+
+    ;No flags set (Main game)
+    LDA #$2b                ; light green
+    JMP write               ; Skip other states
+
+isBuildMode:
+    LDA #$16                ; red
+    JMP write               ; Skip other states
+
+isBuilding:
+    LDA #$01                ; Blue
+    JMP write               ; Skip other states
+
+paused: 
+    LDA #$00                ; grays
+    JMP write               ; Skip other states
+
+write:
+    STA $2007               ; write the color
+    RTS
+.endproc
+
 ; INTERRUPTROUTINES
 nmi:
+    PHA                     ; push A to stack
+
+    JSR UpdateBackgroundColor ; TEST FUNCTION TO SEE THE DIFFERENT STATES
+
+    PLA                    ; Pull A from stack
     RTI                    ; Return from NMI-interrupt
 
 irq:
@@ -298,3 +397,4 @@ irq:
 
 ; CHARACTER ROM
 .segment "CHR" 
+
