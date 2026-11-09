@@ -28,11 +28,13 @@ jobs:
       - name: Assemble 6502 source
         run: |
           mkdir -p build
-          ca65 src/game.asm -o build/game.o
+          for f in src/*.asm; do
+            ca65 "$f" -I src -o "build/$(basename "${f%.asm}").o"
+          done
 
       - name: Link NES ROM
         run: |
-          ld65 -C nes.cfg -m build/game.map build/game.o -o build/game.nes
+          ld65 -C nes.cfg -m build/game.map build/*.o -o build/game.nes
 
       - name: Validate iNES ROM
         run: |

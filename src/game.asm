@@ -6,6 +6,8 @@
 ;   Pijl links   = punt naar links bewegen
 ;   Pijl rechts  = punt naar rechts bewegen
 
+.setcpu "6502"                 ; target CPU of this file
+
 .segment "HEADER" ; Header is meestal 16 bytes        
     .byte "NES", $1A           ; Herkenningsbytes voor een NES-ROM
     .byte 2                    ; 2 PRG-ROM banken van 16 KB = 32 KB
@@ -79,5 +81,3 @@ irq:
 .word nmi                  ; NMI-vector
 .word reset                ; RESET-vector
 .word irq                  ; IRQ/BRK-vector
-
-.segment "CHR" 
