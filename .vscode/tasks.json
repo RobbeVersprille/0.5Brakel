@@ -2,59 +2,34 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Prepare build directory",
+      "label": "Build NES ROM",
       "type": "process",
       "command": "powershell.exe",
       "args": [
         "-NoProfile",
         "-Command",
-        "New-Item -ItemType Directory -Force -Path '${workspaceFolder}\\build' | Out-Null"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Assemble NES source",
-      "type": "process",
-      "command": "ca65",
-      "args": [
-        "src/game.asm",
-        "-o",
-        "build/game.o"
+        "New-Item -ItemType Directory -Force -Path build | Out-Null; Remove-Item build\\*.o -ErrorAction SilentlyContinue; foreach ($f in Get-ChildItem src -Filter *.asm) { ca65 ('src/' + $f.Name) -I src -o ('build/' + $f.BaseName + '.o'); if ($LASTEXITCODE -ne 0) { exit 1 } }; $objs = Get-ChildItem build -Filter *.o | ForEach-Object { 'build/' + $_.Name }; ld65 -C nes.cfg -m build/game.map @objs -o build/game.nes; exit $LASTEXITCODE"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOn": "Prepare build directory",
-      "dependsOrder": "sequence",
-      "problemMatcher": []
-    },
-    {
-      "label": "Link NES ROM",
-      "type": "process",
-      "command": "ld65",
-      "args": [
-        "-C",
-        "nes.cfg",
-        "-m",
-        "build/game.map",
-        "build/game.o",
-        "-o",
-        "build/game.nes"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "dependsOn": "Assemble NES source",
-      "dependsOrder": "sequence",
-      "problemMatcher": []
-    },
-    {
-      "label": "Build NES ROM",
-      "dependsOn": "Link NES ROM",
-      "dependsOrder": "sequence",
       "group": {
         "kind": "build",
         "isDefault": true
+      },
+      "problemMatcher": {
+        "owner": "ca65",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(.+)\\((\\d+)\\): (Error|Warning): (.*)$",
+          "file": 1,
+          "line": 2,
+          "severity": 3,
+          "message": 4
+        }
       }
     }
   ]
