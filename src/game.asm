@@ -8,6 +8,9 @@
 ;   SELECT-Button =
 ;   START-Button  =
 
+; Macros
+Joypad1 =  $4016; 
+
 .segment "HEADER"
     .byte "NES", $1A           ; Identification bytes for an NES ROM
     .byte 2                    ; 2 PRG-ROM banks of 16 KB = 32 KB
@@ -21,12 +24,13 @@
 .segment "ZEROPAGE"        
     buttons:          .res 1   ; New button input from current frame (A, B, Select, Start, Up, Down, Left, Right)
     old_buttons:      .res 1   ; Old button input from previous frame (A, B, Select, Start, Up, Down, Left, Right)
-    selected_building: .res 1   ; Keeps track of the selected "building" (faactory, depo, area, belt,....)
+    selected_building: .res 1   ; Keeps track of the selected "building" (factory, depo, area, belt,....)
     
     flags: .res 1
         PAUSED_FLAG    = %00000001  ; bit 0 = paused
         BUILD_FLAG     = %00000010  ; bit 1 = build mode
         SELECTING_FLAG = %00000100  ; bit 2 = selecting area
+    
     
 
 .segment "CODE"
@@ -64,22 +68,32 @@ wait_vblank:        ; Wait for the PPU to start
 
     ; FOREVER LOOP
     forever:
-        JSR Main ;Main loop
+        JSR Main ; Main loop
         JMP forever
 
 .proc Main 
     JSR ReadController    ; Read controller input
     JSR HandleButtonInput ; Handles the button input and sets or calls the according flags/subroutines
+    
+    LDA flags
+    BIT PAUSED_FLAG ; check bit 0 of the flags is set
+    BEQ End ; Game is paused
+   
+
+
+end:    
     RTS
 .endproc
+
+
 
 .proc ReadController
 
     LDA #$01              
-    STA $4016              ; Ping controller 1 to latch it's input
+    STA Joypad1              ; Ping controller 1 to latch it's input
 
     LDA #$00               
-    STA $4016              ; Ping controller 1 to stop latching input so reading can start
+    STA Joypad1              ; Ping controller 1 to stop latching input so reading can start
 
     LDX #$08               ; Loop counter
 
@@ -90,7 +104,7 @@ wait_vblank:        ; Wait for the PPU to start
     STA buttons            ; Clearing old input
 
 readLoop:                  ; Loops 8 times to cover all input bits
-    LDA $4016              ; Read next bit
+    LDA Joypad1              ; Read next bit
     LSR A                  ; Put A in carry-flag
     ROL buttons            ; Put carry-flag in buttons
 
