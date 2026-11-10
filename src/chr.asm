@@ -19,9 +19,9 @@ CONVEYOR_BLACK    = $0F                    ; black
 ; ====================================================
 
 PaletteData:
-    .repeat 8
-        .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
-    .endrepeat
+        .byte COL_BACKDROP, COL_BACKDROP, COL_BACKDROP, COL_BACKDROP ; default
+        .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK ; conveyors
+        .byte COL_BACKDROP, $11, $21, $01 ; blueprint
 
 ; ====================================================
 ; CHR-ROM: 8 KB total
