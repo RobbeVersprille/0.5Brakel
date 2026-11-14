@@ -32,6 +32,8 @@ PaletteData:
 ; Tile 0: empty tile (16 bytes)
 .res 16, $00
 
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$00,$00,$00,$00,$00,$00,$00 ; tile with only color index 1 (used as hud background)
+
 .byte $FF,$CC,$66,$33,$33,$66,$CC,$FF,$FF,$33,$99,$CC,$CC,$99,$33,$FF ; right   horizontal conveyor A >
 .byte $FF,$66,$33,$99,$99,$33,$66,$FF,$FF,$99,$CC,$66,$66,$CC,$99,$FF ; right   horizontal conveyor B >
 .byte $C3,$E7,$BD,$99,$C3,$E7,$BD,$99,$BD,$99,$C3,$E7,$BD,$99,$C3,$E7 ; down    vertical conveyor A v
