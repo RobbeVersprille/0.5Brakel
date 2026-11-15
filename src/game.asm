@@ -6,7 +6,11 @@
 ;   Pijl links   = punt naar links bewegen
 ;   Pijl rechts  = punt naar rechts bewegen
 
+.include "constants.asm"
+
 .setcpu "6502"                 ; target CPU of this file
+
+.import ShowHud
 
 .segment "HEADER" ; Header is meestal 16 bytes        
     .byte "NES", $1A           ; Herkenningsbytes voor een NES-ROM
@@ -57,6 +61,19 @@ wait_vblank:
 
     ; Continue with your game initialization here
     ; JMP main_loop
+
+    JSR ShowHud
+
+enable_rendering:
+	lda #%10000000	; Enable NMI
+	sta $2000
+	lda #%00011110	; Enable Sprites
+	sta $2001
+
+reset_scroll:
+    LDA #$00
+    STA PPUSCROLL   ; set x-scroll to 0
+    STA PPUSCROLL   ; set y-scroll to 0
 
     forever:
         JMP forever
