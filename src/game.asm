@@ -14,38 +14,38 @@ SCREEN_WIDTH  = $20 ; TODO merge with viktor
 SCREEN_HEIGHT = $1E ; TODO merge with viktor
 
 .segment "HEADER"
-    .byte "NES", $1A           ; Identification bytes for an NES ROM
-    .byte 2                    ; 2 PRG-ROM banks of 16 KB = 32 KB
-    .byte 1                    ; 1 CHR-ROM bank of 8 KB = 8 KB
-    .byte $00                  ; Mapper 0, horizontal mirroring
-    .byte $00                  ; Other header settings
-    .byte $00, $00, $00, $00   ; Unused header bytes
-    .byte $00, $00, $00, $00   ; Additional reserved header bytes
-
-
-.segment "ZEROPAGE"  
-    cursor_x:         .res 1   ; x position of the cursor
-    cursor_y:         .res 1   ; y position of the cursor
-    buttons:          .res 1   ; New button input from current frame (A, B, Select, Start, Up, Down, Left, Right)
-    old_buttons:      .res 1   ; Old button input from previous frame (A, B, Select, Start, Up, Down, Left, Right)
-        A_BUTTON      = %10000000  ; bit 0 = A
-        B_BUTTON      = %01000000  ; bit 1 = B
-        SELECT_BUTTON = %00100000  ; bit 2 = Select
-        START_BUTTON  = %00010000  ; bit 3 = Start     
-        UP_BUTTON     = %00001000  ; bit 4 = Up    
-        DOWN_BUTTON   = %00000100  ; bit 5 = Down 
-        LEFT_BUTTON   = %00000010  ; bit 6 = Left
-        RIGHT_BUTTON  = %00000001  ; bit 7 = Right    
-
-    selected_building_mode: .res 1  ; Keeps track of the selected "building" (factory, depo, area, belt,....) 
-        DEPOSIT_STATE     = $00  ; bit 0 = Deposit
-        CONVEYER_STATE    = $01  ; bit 1 = Conveyer
-        AREA_SELECT_STATE = $02  ; bit 2 = Area Select
-        FACTORY_STATE     = $03  ; bit 3 = Factory     
-        REFINERY_STATE    = $04  ; bit 4 = Refinery      
-        COLLECTION_STATE  = $05  ; bit 5 = Collection     
-        PEOPLE_STATE      = $06  ; bit 6 = People 
-        DESTROY_STATE     = $07  ; bit 7 = Destroy
+    .byte "NES", $1A                 ; Identification bytes for an NES ROM
+    .byte 2                          ; 2 PRG-ROM banks of 16 KB = 32 KB
+    .byte 1                          ; 1 CHR-ROM bank of 8 KB = 8 KB
+    .byte $00                        ; Mapper 0, horizontal mirroring
+    .byte $00                        ; Other header settings
+    .byte $00, $00, $00, $00         ; Unused header bytes
+    .byte $00, $00, $00, $00         ; Additional reserved header bytes
+ 
+ 
+.segment "ZEROPAGE"   
+    cursor_x:         .res 1         ; x position of the cursor
+    cursor_y:         .res 1         ; y position of the cursor
+    buttons:          .res 1         ; New button input from current frame (A, B, Select, Start, Up, Down, Left, Right)
+    old_buttons:      .res 1         ; Old button input from previous frame (A, B, Select, Start, Up, Down, Left, Right)
+        A_BUTTON      = %10000000    ; bit 0 = A
+        B_BUTTON      = %01000000    ; bit 1 = B
+        SELECT_BUTTON = %00100000    ; bit 2 = Select
+        START_BUTTON  = %00010000    ; bit 3 = Start     
+        UP_BUTTON     = %00001000    ; bit 4 = Up    
+        DOWN_BUTTON   = %00000100    ; bit 5 = Down 
+        LEFT_BUTTON   = %00000010    ; bit 6 = Left
+        RIGHT_BUTTON  = %00000001    ; bit 7 = Right    
+ 
+    selected_building_mode: .res 1   ; Keeps track of the selected "building" (factory, depo, area, belt,....) 
+        DEPOSIT_STATE     = $00      ; bit 0 = Deposit
+        CONVEYER_STATE    = $01      ; bit 1 = Conveyer
+        AREA_SELECT_STATE = $02      ; bit 2 = Area Select
+        FACTORY_STATE     = $03      ; bit 3 = Factory     
+        REFINERY_STATE    = $04      ; bit 4 = Refinery      
+        COLLECTION_STATE  = $05      ; bit 5 = Collection     
+        PEOPLE_STATE      = $06      ; bit 6 = People 
+        DESTROY_STATE     = $07      ; bit 7 = Destroy
 
     flags: .res 1
         PAUSED_FLAG     = %00000001  ; bit 0 = paused
@@ -57,9 +57,7 @@ SCREEN_HEIGHT = $1E ; TODO merge with viktor
 
 .segment "CODE"
 
-
-
-reset:
+reset:                             ; Reset label
     SEI             ; Disable CPU interrupts
     CLD             ; Disable decimal mode
 
@@ -81,11 +79,11 @@ reset:
     STA selected_building_mode
     STA flags     
 
-wait_vblank:        ; Wait for the PPU to start
+wait_vblank:                       ; Wait for the PPU to start
     BIT $2002       ; Reads the PPU-status; bit 7 = VBlank on/off
     BPL wait_vblank ; Loop util bit 7 = nul (negative bit)
 
-vblank2:                    ; second vblank wait so the PPU is fully warmed up
+vblank2:                           ; second vblank wait so the PPU is fully warmed up
     BIT $2002
     BPL vblank2
 
@@ -100,35 +98,36 @@ vblank2:                    ; second vblank wait so the PPU is fully warmed up
         JSR Main ; Main loop | START YOUR ADVENTURE HERE !!!!!!!!! |
         JMP forever
 
-.proc Main 
-    JSR ReadController    ; Read controller input
-    JSR HandlePaused ; Handles/Updates the paused state of the game
+
+
+
+
+.proc Main                         ; MAIN LOOP OF THE GAME
+    JSR ReadController             ; Read controller input
+    JSR HandlePaused               ; Handles/Updates the paused state of the game
 
     LDA flags
-    AND #PAUSED_FLAG ; check bit 0 of the flags is set
-    BNE end  ; Game paused skip al other btn handling (for now)
+    AND #PAUSED_FLAG               ; check bit 0 of the flags is set
+    BNE end                        ; Game paused skip al other btn handling (TODO CHECK: for now)
 
-    JSR HandleButtonInput ; Handles the button input and sets or calls the according flags/subroutines
+    JSR HandleButtonInput          ; Handles the button input and sets or calls the according flags/subroutines
 
-    LDA flags
-    AND #BUILD_MENU_FLAG ; check bit 1 of the flags is set
-    BNE skipBuildMenu ; Game not in build mode
-    JSR BuildMode ; Game in build mode
+    LDA flags                      ; LOAD the flags
+    AND #BUILD_MENU_FLAG           ; check bit for BUILD_MENU_FLAG of the flags is set
+    BNE skipBuildMenu              ; Game not in build mode -> Skip
+    JSR BuildMode                  ; Game in build mode jump to logic
 
-skipBuildMenu:
-
+skipBuildMenu:                     ; Skip the build Mode logic
     LDA flags
     AND #BUILD_MENU_FLAG ; check bit 1 of the flags is set
     BNE skipAreaSelect ; Game not in area select mode
     JSR AreaSelectMode ; Game in area select mode
-skipAreaSelect:
-
-end:  
+skipAreaSelect:                    ; Skip Area select Mode logic
+end:                               ; END of MAIN
     RTS
 .endproc
 
-; Handles/Updates the paused state of the game
-.proc HandlePaused
+.proc HandlePaused                 ; Handles/Updates the paused state of the game
     LDA buttons         ; Load button input
     AND #START_BUTTON  ; Isolate bit 4, START-Button
     BEQ end         ; If START not pressed, end
@@ -145,29 +144,35 @@ end:
     LDA flags        ; Load flags
     EOR #PAUSED_FLAG ; Flip bit 0 (Paused flag)
     STA flags        ; Save new state
-end:
+end:                               ; End of the HandlePaused logic
     RTS
 .endproc
 
-.proc BuildMode
+.proc BuildMode                    ; Logic for handling the Build Mode
     LDA flags
     AND #BUILD_FLAG
-    BEQ browseMenu              ; not building so move the HUD cursor
+    BEQ browseMenu                 ; not building so move the cursor in the HUD
     JSR Build
     RTS
 
-browseMenu:
+browseMenu:                        ; Start of the logic for cursor movement inside the HUD
     LDA buttons
     AND #LEFT_BUTTON
-    BEQ skipLeft                ; not pressed
+    BEQ checkRight                 ; not pressed
     LDA old_buttons
     AND #LEFT_BUTTON
-    BNE skipLeft                ; held, not a new press so jump
+    BNE checkRight                 ; held, not a new press so jump
     LDA selected_building_mode
-    CMP #DESTROY_STATE
-    BEQ skipLeft                ; already at the last option
-    ASL selected_building_mode
-skipLeft:
+    CMP #DEPOSIT_STATE
+    BEQ loopToBack                 ; At the first option loop back
+    DEC selected_building_mode
+    JMP checkRight                 ; Jump to avoid the loopback code
+
+loopToFront:                       ; Reset the selected building mode to #DESTROY_STATE (7 - back)
+    LDA #DESTROY_STATE
+    STA selected_building_mode 
+
+checkRight:                        ; The logic for Right cursor movement inside the HUD
     LDA buttons
     AND #RIGHT_BUTTON
     BEQ skipRight               ; not pressed
@@ -175,25 +180,28 @@ skipLeft:
     AND #RIGHT_BUTTON
     BNE skipRight               ; held, not a new press so jump
     LDA selected_building_mode
-    CMP #DEPOSIT_STATE
-    BEQ skipRight               ; already at the first option
-    LSR selected_building_mode
-skipRight:
+    CMP #DESTROY_STATE
+    BEQ loopToBack               ; already at the last option 
+    DEC selected_building_mode
+    JMP skipRight                ; Jump to avoid the loopback code
+
+loopToBack:                        ; Reset the selected building mode to #DEPOSIT_STATE (0 - front)
+    LDA #DEPOSIT_STATE
+    STA selected_building_mode 
+
+skipRight:                         ; Skip the logic for Right cursor movement inside the HUD
     RTS
 .endproc
 
-.proc Build
-; Build logic
-
-RTS
+.proc Build                        ; Build logic
+    RTS
 .endproc
 
-.proc AreaSelectMode
-; Show the cursor on the grid and start the resource area selection
-RTS
+.proc AreaSelectMode               ; Show the cursor on the grid and start the resource area selection
+    RTS
 .endproc
 
-.proc ReadController
+.proc ReadController               ; Read the controller state of joypad1
 
     LDA #$01              
     STA JOYPAD1              ; Ping controller 1 to latch it's input
@@ -209,7 +217,7 @@ RTS
     LDA #$00               
     STA buttons            ; Clearing old input
 
-readLoop:                  ; Loops 8 times to cover all input bits
+readLoop:                          ; Loops 8 times to cover all input bits
     LDA JOYPAD1              ; Read next bit
     LSR A                  ; Put A in carry-flag
     ROL buttons            ; Put carry-flag in buttons
@@ -220,9 +228,9 @@ readLoop:                  ; Loops 8 times to cover all input bits
     RTS                    ; Return to main
 .endproc
 
-.proc HandleButtonInput
+.proc HandleButtonInput            ; Handles the general button input (sets states and updates cursor index) 
     LDA buttons         ; Load button input
-    AND #A_BUTTON      ; Isolate bit 7, A-Button
+    AND #A_BUTTON       ; Isolate bit 7, A-Button
     BEQ checkB          ; If A not pressed, skip A-Button code and check B-Button
 
     ; A-BUTTON CODE HOLD:
@@ -243,7 +251,7 @@ readLoop:                  ; Loops 8 times to cover all input bits
     ORA #BUILD_FLAG           ; set is building 
     STA flags
 
-checkB:
+checkB:                            ; Checks B button
     LDA buttons         ; Load button input
     AND #B_BUTTON      ; Isolate bit 6, B-Button
     BEQ checkSelect     ; If B not pressed, skip B-Button code and check Select-Button
@@ -257,7 +265,7 @@ checkB:
     ; B-BUTTON CODE NEW PRESS:
 
 
-checkSelect:
+checkSelect:                       ; Checks SELECT button
     LDA buttons         ; Load button input
     AND #SELECT_BUTTON  ; Isolate bit 5, SELECT-Button
     BEQ checkStart      ; If SELECT not pressed, skip SELECT-Button code and check START-Button
@@ -278,10 +286,8 @@ checkSelect:
     LDA #DEPOSIT_STATE ; Set cursor to deposit
     STA selected_building_mode ; Store the new flag 
     
-checkStart:
-    ; Gets handled before the other buttons for pausing reasons
-
-checkUp:
+checkStart:                        ; Checks START in Handle Paused so it gets handled before the other buttons for pausing reasons (no check here)
+checkUp:                           ; Checks UP button
     LDA buttons         ; Load button input
     AND #UP_BUTTON   ; Isolate bit 3, UP-Button
     BEQ checkDown       ; If UP not pressed, skip UP-Button code and check DOWN-Button
@@ -294,7 +300,7 @@ checkUp:
 
     ; UP-BUTTON CODE NEW PRESS:
 
-checkDown:
+checkDown:                         ; Checks DOWN button
     LDA buttons         ; Load button input
     AND #DOWN_BUTTON    ; Isolate bit 2, DOWN-Button
     BEQ checkLeft       ; If DOWN not pressed, skip DOWN-Button code and check LEFT-Button
@@ -307,7 +313,7 @@ checkDown:
 
     ; DOWN-BUTTON CODE NEW PRESS:
 
-checkLeft:
+checkLeft:                         ; Checks LEFT button
     LDA buttons         ; Load button input
     AND #LEFT_BUTTON    ; Isolate bit 1, LEFT-Button
     BEQ checkRight      ; If LEFT not pressed, skip LEFT-Button code and check RIGHT-Button
@@ -320,7 +326,7 @@ checkLeft:
 
     ; LEFT-BUTTON CODE NEW PRESS:
 
-checkRight:
+checkRight:                        ; Checks RIGHT button
     LDA buttons         ; Load button input
     AND #RIGHT_BUTTON   ; Isolate bit 0, RIGHT-Button
     BEQ inputDone       ; If RIGHT not pressed, skip RIGHT-Button code
@@ -333,11 +339,11 @@ checkRight:
 
     ; RIGHT-BUTTON CODE NEW PRESS:
 
-inputDone:
+inputDone:                         ; END of input checks
     RTS ; Return to Main
 .endproc
 
-.proc UpdateBackgroundColor
+.proc UpdateBackgroundColor        ; TEMPERARY HELPER FUNCTION TO SHOW THE STATES
     LDA $2002               ; reset the $2006 write latch
     LDA #$3F
     STA $2006
@@ -362,43 +368,42 @@ inputDone:
     LDA #$2b                ; light green
     JMP write               ; Skip other states
 
-isBuildMode:
-    LDA #$16                ; red
-    JMP write               ; Skip other states
+isBuildMode:                       ; GAME IN HUD MODE (SELECTING BUILDING IN HUD)
+    LDA #$16                       ; red
+    JMP write                      ; Skip other states
 
-isBuilding:
-    LDA #$01                ; Blue
-    JMP write               ; Skip other states
+isBuilding:                        ; GAME IN BUILD MODE (BUILING SELECTED BUILDING)
+    LDA #$01                       ; Blue
+    JMP write                      ; Skip other states
 
-paused: 
-    LDA #$00                ; grays
-    JMP write               ; Skip other states
+paused:                            ; GAME PAUSED
+    LDA #$00                       ; grays
+    JMP write                      ; Skip other states
 
-write:
-    STA $2007               ; write the color
+write:                             ; WRITE THE COLOR
+    STA $2007                      ; light green the color
     RTS
 .endproc
 
 ; INTERRUPTROUTINES
-nmi:
-    PHA                     ; push A to stack
+nmi:                               ; NMI INTERUPT
+    PHA                            ; push A to stack
 
-    JSR UpdateBackgroundColor ; TEST FUNCTION TO SEE THE DIFFERENT STATES
+    JSR UpdateBackgroundColor      ; TEST FUNCTION TO SEE THE DIFFERENT STATES
 
-    PLA                    ; Pull A from stack
-    RTI                    ; Return from NMI-interrupt
+    PLA                            ; Pull A from stack
+    RTI                            ; Return from NMI-interrupt
 
-irq:
+irq:                               ; IRA INTERUPT
     RTI                    ; Return from IRQ-interrupt
 
 
-; INTERRUPTVECTOR
-.segment "VECTORS"
 
-.word nmi                  ; NMI-vector
-.word reset                ; RESET-vector
-.word irq                  ; IRQ/BRK-vector
+.segment "VECTORS" ; INTERRUPTVECTOR
+    .word nmi                  ; NMI-vector
+    .word reset                ; RESET-vector
+    .word irq                  ; IRQ/BRK-vector
 
-; CHARACTER ROM
-.segment "CHR" 
+
+.segment "CHR" ; CHARACTER ROM
 
