@@ -420,7 +420,7 @@ irq:                               ; IRA INTERUPT
 
 PALETTE_SIZE = PaletteDataEnd - PaletteData
 PaletteData:
-    .byte $1a $30 $28 $10
+    .byte $1a, $30, $28, $10
 PaletteDataEnd:
 
 .segment "VECTORS" ; INTERRUPTVECTOR
