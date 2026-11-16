@@ -46,7 +46,7 @@ HUD_ATTRIBUTE_HEIGHT = (HUD_HEIGHT / ATTRSIZE) + 1  ; +1 because the division ne
 ;;  HUD TILE CONSTANTS
 ;; ========================================================
 
-EMPTY_TILE          = $12
+EMPTY_TILE          = $10
 FIRST_CORNER_TILE   = $0A
 FIRST_EDGE_TILE     = $0E
 
