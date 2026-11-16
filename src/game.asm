@@ -12,6 +12,7 @@
 JOYPAD1 =  $4016; 
 SCREEN_WIDTH  = $20 ; TODO merge with viktor
 SCREEN_HEIGHT = $1E ; TODO merge with viktor
+HUD_HEIGHT    = $05 ; TODO merge with viktor
 
 .segment "HEADER"
     .byte "NES", $1A                 ; Identification bytes for an NES ROM
@@ -289,14 +290,20 @@ checkSelect:                       ; Checks SELECT button
 checkStart:                        ; Checks START in Handle Paused so it gets handled before the other buttons for pausing reasons (no check here)
 checkUp:                           ; Checks UP button
     LDA buttons         ; Load button input
-    AND #UP_BUTTON   ; Isolate bit 3, UP-Button
+    AND #UP_BUTTON      ; Isolate bit 3, UP-Button
     BEQ checkDown       ; If UP not pressed, skip UP-Button code and check DOWN-Button
 
     ; UP-BUTTON CODE HOLD:
+    DEC cursor_y        ; Increment the cursor index
+    BMI checkOldUp      ; Skip reset if index != 0 
 
-    LDA old_buttons     ; Load old button input
-    AND #UP_BUTTON      ; Isolate bit 3, UP-Button
-    BNE checkDown       ; If UP was pressed, skip new UP-Button press code and check DOWN-Button
+    LDA #(SCREEN_HEIGHT - HUD_HEIGHT) ; Start index of the HUD
+    STA cursor_y            ; SET y index to max value
+
+    checkOldUp:             ; Check the old button state of UP   
+        LDA old_buttons     ; Load old button input
+        AND #UP_BUTTON      ; Isolate bit 3, UP-Button
+        BNE checkDown       ; If UP was pressed, skip new UP-Button press code and check DOWN-Button
 
     ; UP-BUTTON CODE NEW PRESS:
 
@@ -406,4 +413,4 @@ irq:                               ; IRA INTERUPT
 
 
 .segment "CHR" ; CHARACTER ROM
-
+    .byte $E7,$81,$81,$00,$00,$81,$81,$E7,$00,$00,$00,$00,$00,$00,$00,$00 ; Cursor sprite
