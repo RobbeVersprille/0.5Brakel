@@ -10,6 +10,8 @@
 
 ; Macros
 JOYPAD1 =  $4016; 
+SCREEN_WIDTH  = $20 ; TODO merge with viktor
+SCREEN_HEIGHT = $1E ; TODO merge with viktor
 
 .segment "HEADER"
     .byte "NES", $1A           ; Identification bytes for an NES ROM
@@ -36,14 +38,14 @@ JOYPAD1 =  $4016;
         RIGHT_BUTTON  = %00000001  ; bit 7 = Right    
 
     selected_building_mode: .res 1  ; Keeps track of the selected "building" (factory, depo, area, belt,....) 
-        DEPOSIT_FLAG     = %00000001  ; bit 0 = Deposit
-        CONVEYER_FLAG    = %00000010  ; bit 1 = Conveyer
-        AREA_SELECT_FLAG = %00000100  ; bit 2 = Area Select
-        FACTORY_FLAG     = %00001000  ; bit 3 = Factory     
-        REFINERY_FLAG    = %00010000  ; bit 4 = Refinery      
-        COLLECTION_FLAG  = %00100000  ; bit 5 = Collection     
-        PEOPLE_FLAG      = %01000000  ; bit 6 = People 
-        DESTROY_FLAG     = %10000000  ; bit 7 = Destroy
+        DEPOSIT_STATE     = $00  ; bit 0 = Deposit
+        CONVEYER_STATE    = $01  ; bit 1 = Conveyer
+        AREA_SELECT_STATE = $02  ; bit 2 = Area Select
+        FACTORY_STATE     = $03  ; bit 3 = Factory     
+        REFINERY_STATE    = $04  ; bit 4 = Refinery      
+        COLLECTION_STATE  = $05  ; bit 5 = Collection     
+        PEOPLE_STATE      = $06  ; bit 6 = People 
+        DESTROY_STATE     = $07  ; bit 7 = Destroy
 
     flags: .res 1
         PAUSED_FLAG     = %00000001  ; bit 0 = paused
@@ -162,7 +164,7 @@ browseMenu:
     AND #LEFT_BUTTON
     BNE skipLeft                ; held, not a new press so jump
     LDA selected_building_mode
-    CMP #NONE_FLAG
+    CMP #DESTROY_STATE
     BEQ skipLeft                ; already at the last option
     ASL selected_building_mode
 skipLeft:
@@ -173,7 +175,7 @@ skipLeft:
     AND #RIGHT_BUTTON
     BNE skipRight               ; held, not a new press so jump
     LDA selected_building_mode
-    CMP #DEPOSIT_FLAG
+    CMP #DEPOSIT_STATE
     BEQ skipRight               ; already at the first option
     LSR selected_building_mode
 skipRight:
@@ -273,7 +275,7 @@ checkSelect:
     EOR #BUILD_MENU_FLAG  ; Flip bit 1 (Build flag)
     AND #(BUILD_FLAG ^ $FF)   ; disable is building flag 
     STA flags        ; Save new state
-    LDA #DEPOSIT_FLAG ; Set cursor to deposit
+    LDA #DEPOSIT_STATE ; Set cursor to deposit
     STA selected_building_mode ; Store the new flag 
     
 checkStart:
