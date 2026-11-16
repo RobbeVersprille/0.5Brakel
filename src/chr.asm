@@ -44,4 +44,12 @@ PaletteData:
 .byte $BD,$E7,$C3,$99,$BD,$E7,$C3,$99,$C3,$99,$BD,$E7,$C3,$99,$BD,$E7 ; up    B = vertical B flipped ^
 
 .byte $18,$18,$4E,$39,$08,$14,$14,$12,$00,$00,$77,$77,$00,$00,$00,$36   ; worker tile
-.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$00,$00,$00,$00,$00,$00,$00   ; tile with only color index 1 (used as hud background)
+
+.byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$3f,$3f,$38,$30,$30,$30   ; top-left corner
+.byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$fc,$fc,$1c,$0c,$0c,$0c   ; top-right corner
+.byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$30,$30,$30,$38,$3f,$3f,$00,$00   ; bottom-left corner
+.byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$0c,$0c,$0c,$1c,$fc,$fc,$00,$00   ; bottom-right corner
+.byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$00,$ff,$ff,$00,$00,$00   ; horizontal edge
+.byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$18,$18,$18,$18,$18,$18,$18,$18   ; vertical edge
+.byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00   ; empty
+
