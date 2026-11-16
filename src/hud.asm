@@ -46,9 +46,15 @@ HUD_ATTRIBUTE_HEIGHT = (HUD_HEIGHT / ATTRSIZE) + 1  ; +1 because the division ne
 ;;  HUD TILE CONSTANTS
 ;; ========================================================
 
+TOP_LEFT_CORNER     = $0A
+TOP_RIGHT_CORNER    = $0B
+BOTTOM_LEFT_CORNER  = $0C
+BOTTOM_RIGHT_CORNER = $0D
+HORIZONTAL_EDGE     = $0E
+VERTICAL_EDGE       = $0F
 EMPTY_TILE          = $10
-FIRST_CORNER_TILE   = $0A
-FIRST_EDGE_TILE     = $0E
+
+PLACEHOLDER_TILE    = $11
 
 .proc InitHud
     LDA #$00            ; reset value for ram
@@ -57,36 +63,87 @@ FIRST_EDGE_TILE     = $0E
 
 .proc ShowHud
 
-    JSR FillTileMap
+    JSR FillNametable
+    JSR DrawHudItems
     JSR FillAttributeMap
+
+end:
+    RTS
 
 .endproc
 
-.proc FillTileMap
-    ;; setup ppu so it loads tiles into nametable at correct position
-    LDA #>HUD_POS_NAMETABLE ; high byte of hud position in nametable
-    STA PPUADDR             ; store high byte of hud position in ppuaddr
-    LDA #<HUD_POS_NAMETABLE ; low byte of hud position in nametable
-    STA PPUADDR             ; store low byte of hud position in nametable
+;; fills the nametable for the hud
+.proc FillNametable
+    ;; setup ppu nametable writing
+    LDA #>HUD_POS_NAMETABLE ; load high byte of hud position into A
+    STA PPUADDR             ; store high byte of hud position into ppuaddr
+    LDA #<HUD_POS_NAMETABLE ; load low byte of hud position into A
+    STA PPUADDR             ; store low byte of hud position into ppuaddr
 
-    ;; load nametable with hud background tile
-    LDX #HUD_WIDTH   ; load width into X to use as counter
-    LDY #HUD_HEIGHT  ; load height into Y to use as counter
-    LDA #EMPTY_TILE  ; load index of tile to load int A
+drawTopLine:
+    ;; draw top left corner of the hud screen
+    LDA #TOP_LEFT_CORNER ; load index of top left corner tile
+    STA PPUDATA         ; store top left corner tile in nametable
 
-@loop:
-    STA PPUDATA     ; store tile index into ppudata
-    DEX             ; decrement counter
-    BNE @loop       ; if width counter is not 0, keep looping
+    ;; draw horizontal lines of top row
+    LDA #HORIZONTAL_EDGE ; load index of horizontal edge tile
+    LDX #HUD_WIDTH - 2   ; load amount of times this tile needs to be drawn
+    JSR DrawLine        ; draw the horizontal edge x times
 
-    LDX #HUD_WIDTH  ; restart with couter
-    DEY             ; decrement height counter
-    BNE @loop       ; if height counter is not 0, keep looping
+    ;; draw top right corner of the hud screen
+    LDA #TOP_RIGHT_CORNER    ; load index of top right corner tile
+    STA PPUDATA             ; store top right corner tile in nametable
+
+drawMiddleLines:
+    LDY #HUD_HEIGHT - 2  ; amount of rows to draw
+
+drawMiddleLine:
+    ;; draw first left border tile
+    LDA #VERTICAL_EDGE   ; load index of vertical edge tile
+    STA PPUDATA         ; store vertical edge tile in nametable
+
+    ;; draw empty tiles over span of the hud
+    LDA #EMPTY_TILE      ; load index of empty tile
+    LDX #HUD_WIDTH - 2   ; load amount of times this tile needs to be drawn
+    JSR DrawLine        ; draw empty tile x times
+
+    ;; draw final left border tile
+    LDA #VERTICAL_EDGE
+    STA PPUDATA
+
+    DEY                 ; decrement amount of rows to draw
+    BNE drawMiddleLine  ; keep drawing lines, while amount of rows to draw is not 0
+
+drawBottomLine:
+    ;; draw bottom left corner tile
+    LDA #BOTTOM_LEFT_CORNER  ; load index of bottom left corner tile
+    STA PPUDATA             ; store bottom left corner tile into nametable
+
+    ;; draw horizontal lines
+    LDA #HORIZONTAL_EDGE ; load index of horizontal tile
+    LDX #HUD_WIDTH - 2   ; load amount of columns to draw
+    JSR DrawLine        ; draw horizontal line tile x times
+
+    ;; draw bottom right corner tile
+    LDA #BOTTOM_RIGHT_CORNER ; load index of bottom right corner tile
+    STA PPUDATA             ; store bottom right corner tile into nametable
 
 end:
     RTS
 .endproc
 
+;; Draws a specified tile x times to the ppudata
+;; @param A: which tile index to draw
+;; @param X: amount of times to draw
+.proc DrawLine
+    STA PPUDATA     ; store specified tile in nametable
+    DEX             ; decrement amount to draw
+    BNE DrawLine    ; keep drawing while amount is not 0
+
+    RTS
+.endproc 
+
+;; Fills the attribute map for the hud
 .proc FillAttributeMap
     ;; set ppuaddr to hud pos in attribute table
     LDA #>HUD_POS_ATTRTABLE ; high byte of hud position in attribute table
@@ -111,67 +168,62 @@ end:
     RTS
 .endproc
 
-.proc GetNecessaryTile
-;; check if x is an extreme value
-extremaX:
-    TXA ; transfer column index to a
-    PHA ; push column index value for later
+.proc DrawHudItems
+    LDY #(ITEM_TABLE_SIZE / ITEM_TABLE_WIDTH)   ; amount of items to process
+    LDX 0                                       ; index in item table
 
-    ORA HUD_WIDTH   ; or to get HUD_WIDTH in a (0 -> HUD_WIDTH, HUD_WIDTH -> HUD_WIDTH, if any other value a will not be HUD_VALUE)
-    EOR HUD_WIDTH   ; exclusive or to check if value is equal to HUD_WIDTH
+loop:
+    TXA ; transfer current index value to a
+    PHA ; push index value to save for later
 
-    TAX ; transfer value in x (0 if value is extreme, > 0 if value is not extreme)
+    CLC ; clear carry for arithmetic later
 
-extremaY:
-    TYA ; transfer row index to a
-    PHA ; push row index value for later
+    LDA ItemTable, X        ; load byte of item into a
+    ADC #<HUD_POS_NAMETABLE ; add low byte of nametable pos with nametable offset
+    TAX                     ; transfer low byte to X to store
+    LDA #>HUD_POS_NAMETABLE ; load high byte of nametable pos
+    ADC 0                   ; add carry of previous addition
 
-    ORA HUD_HEIGHT  ; or to get HUD_HEIGTH IN A (see extremaX)
-    EOR HUD_HEIGHT  ; exclusive or to check if value is equal to HUD_HEIGHT
-
-    TAY ; transfer value in y (0 if value is extreme, > 0 if value is not extreme)
+storePPUADDR:
+    STA PPUADDR ; store high byte into ppuaddr
+    TXA         ; transfer low byte stored in X to A
+    STA PPUADDR ; store low byte into ppuaddr
     
+    PLA ; get index back from stack  
+    TAX ; load index back into X
+    INX ; increment index to get next byte of item
+    
+    LDA ItemTable, X    ; get next byte (tileindex) of item at index X
+    STA PPUDATA         ; load tileindex into nametable
+
+    INX         ; increment index int item table
+    DEY         ; decrement amount of items to process
+    BNE loop    ; if there are still items that need to be processed, continue
+
 end:
-    ;; pop registers back from stack
-    PLA
-    TAY
-    PLA
-    TAX
-
     RTS
 
 .endproc
 
-.proc OLDGetNecessaryTile
-checkCorner:
+;; Item table stores positions of hud items
+;; Byte 1: position
+;;      bit 0-4: X position in hud
+;;      bit 5-7: Y position in hud (can only be 3 positions)
+;; Byte 2:
+;;      tile index
+ITEM_TABLE_SIZE = ItemTableEnd - ItemTable
+ITEM_TABLE_WIDTH = 2
+ItemTable:
+    .byte ((1 << 5) | 1), PLACEHOLDER_TILE  ; villager amount
+    .byte ((2 << 5) | 1), PLACEHOLDER_TILE  ; food amount
+    .byte ((3 << 5) | 1), PLACEHOLDER_TILE  ; coin amount
 
-;; check if x is an extreme value
-extremaX:
-    TXA             ; transfer column index to a
-    ORA HUD_WIDTH   ; or to get HUD_WIDTH in a (0 -> HUD_WIDTH, HUD_WIDTH -> HUD_WIDTH, if any other value a will not be HUD_VALUE)
-    CMP HUD_WIDTH   ; check if a is HUD_WIDTH
-    BNE checkEdgeX  ; if X is not an extreme value, it is never a corner an edge so skip to edge check
-
-;; check if y is an extreme value
-extremaY:
-    ;; similar to extremaX but with row extrema
-    TYA
-    ORA HUD_HEIGHT
-    CMP HUD_HEIGHT
-    BNE checkEdgeY
-
-    ;; the tile is in extrema
-    LDA FIRST_CORNER_TILE   ; get first corner tile in tileset
-    CLC                     ; clear carry so it doesnt interfere
-    ADC corner_index        ; add the tile index to the first corner tile
-
-    RTS
-
-;; check if x is an edge
-checkEdgeX:
-
-
-;; check if y is an edge
-checkEdgeY:
-
-.endproc
+;; start of all items that can be selected in the menu
+SELECTABLE_ITEMS = ItemTableEnd - ItemTable
+SelectableItemTable:
+    .byte ((2 << 5) | 16), PLACEHOLDER_TILE
+    .byte ((2 << 5) | 18), PLACEHOLDER_TILE
+    .byte ((2 << 5) | 20), PLACEHOLDER_TILE
+    .byte ((2 << 5) | 22), PLACEHOLDER_TILE
+    .byte ((2 << 5) | 24), PLACEHOLDER_TILE
+ItemTableEnd:

@@ -52,4 +52,9 @@ PaletteData:
 .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$00,$ff,$ff,$00,$00,$00   ; horizontal edge
 .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$18,$18,$18,$18,$18,$18,$18,$18   ; vertical edge
 .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00   ; empty
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$22,$22,$04,$08,$08,$00,$08   ; placeholder tile
 
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$63,$63,$63,$63,$3E,$1C   ; 0
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$66,$66,$0C,$18,$3E,$3E   ; 1
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$0C,$1C,$3C,$2C,$0C,$0C,$0C,$0C   ; 2
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$26,$0C,$0C,$26,$3E,$1C   ; 3
