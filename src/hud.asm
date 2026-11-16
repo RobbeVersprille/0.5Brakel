@@ -122,7 +122,7 @@ extremaX:
 
     TAX ; transfer value in x (0 if value is extreme, > 0 if value is not extreme)
 
-extremaY
+extremaY:
     TYA ; transfer row index to a
     PHA ; push row index value for later
 
