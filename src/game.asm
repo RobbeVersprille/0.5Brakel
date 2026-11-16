@@ -38,10 +38,10 @@ JOYPAD1 =  $4016;
         CONVEYER_FLAG    = %00000010  ; bit 1 = Conveyer
         AREA_SELECT_FLAG = %00000100  ; bit 2 = Area Select
         FACTORY_FLAG     = %00001000  ; bit 3 = Factory     
-        COLLECTION_FLAG  = %00010000  ; bit 4 = Collection    
-        PEOPLE_FLAG      = %00100000  ; bit 5 = People 
-        DESTROY_FLAG     = %01000000  ; bit 6 = Destroy
-        NONE_FLAG        = %10000000  ; bit 7 = NONE      
+        REFINERY_FLAG    = %00010000  ; bit 4 = Refinery      
+        COLLECTION_FLAG  = %00100000  ; bit 5 = Collection     
+        PEOPLE_FLAG      = %01000000  ; bit 6 = People 
+        DESTROY_FLAG     = %10000000  ; bit 7 = Destroy
 
     flags: .res 1
         PAUSED_FLAG     = %00000001  ; bit 0 = paused
