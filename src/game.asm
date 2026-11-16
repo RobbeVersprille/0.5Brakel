@@ -294,7 +294,7 @@ checkUp:                           ; Checks UP button
     BEQ checkDown       ; If UP not pressed, skip UP-Button code and check DOWN-Button
 
     ; UP-BUTTON CODE HOLD:
-    DEC cursor_y        ; Increment the cursor index
+    DEC cursor_y        ; Decrement the cursor index
     BMI checkOldUp      ; Skip reset if index != 0 
 
     LDA #(SCREEN_HEIGHT - HUD_HEIGHT) ; Start index of the HUD
@@ -313,10 +313,19 @@ checkDown:                         ; Checks DOWN button
     BEQ checkLeft       ; If DOWN not pressed, skip DOWN-Button code and check LEFT-Button
 
     ; DOWN-BUTTON CODE HOLD:
+    INC cursor_y        ; Increment the cursor index
+    LDA cursor_y
+    SEC
+    SBC #(SCREEN_HEIGHT - HUD_HEIGHT) ; Subtract the max grid hight from this value
+    BPL checkOldDown        ; Skip reset if index != 0 
 
-    LDA old_buttons     ; Load old button input
-    AND #DOWN_BUTTON    ; Isolate bit 2, DOWN-Button
-    BNE checkLeft       ; If DOWN was pressed, skip new DOWN-Button press code and check LEFT-Button
+    LDA 0                   ; Start index of the screen
+    STA cursor_y            ; SET y index to max value
+
+    checkOldDown:           ; Check the old button state of DOWN   
+        LDA old_buttons     ; Load old button input
+        AND #DOWN_BUTTON    ; Isolate bit 2, DOWN-Button
+        BNE checkLeft       ; If DOWN was pressed, skip new DOWN-Button press code and check LEFT-Button
 
     ; DOWN-BUTTON CODE NEW PRESS:
 
