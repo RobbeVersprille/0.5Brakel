@@ -392,10 +392,15 @@ write:                             ; WRITE THE COLOR
     RTS
 .endproc
 
+.proc DrawCursor                   ; Draw the cursor
+
+    RTS
+.endproc
+
 ; INTERRUPTROUTINES
 nmi:                               ; NMI INTERUPT
     PHA                            ; push A to stack
-
+    JSR DrawCursor                 ; Draw the cursor
     JSR UpdateBackgroundColor      ; TEST FUNCTION TO SEE THE DIFFERENT STATES
 
     PLA                            ; Pull A from stack
@@ -404,7 +409,10 @@ nmi:                               ; NMI INTERUPT
 irq:                               ; IRA INTERUPT
     RTI                    ; Return from IRQ-interrupt
 
-
+PALETTE_SIZE = PaletteDataEnd - PaletteData
+PaletteData:
+    .byte $1a $30 $28 $10
+PaletteDataEnd:
 
 .segment "VECTORS" ; INTERRUPTVECTOR
     .word nmi                  ; NMI-vector
