@@ -21,7 +21,9 @@ JOYPAD1 =  $4016;
     .byte $00, $00, $00, $00   ; Additional reserved header bytes
 
 
-.segment "ZEROPAGE"        
+.segment "ZEROPAGE"  
+    cursor_x:         .res 1   ; x position of the cursor
+    cursor_y:         .res 1   ; y position of the cursor
     buttons:          .res 1   ; New button input from current frame (A, B, Select, Start, Up, Down, Left, Right)
     old_buttons:      .res 1   ; Old button input from previous frame (A, B, Select, Start, Up, Down, Left, Right)
         A_BUTTON      = %10000000  ; bit 0 = A
