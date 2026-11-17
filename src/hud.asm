@@ -25,7 +25,7 @@
 ;; ========================================================
 
 HUD_WIDTH   = SCREEN_WIDTH
-HUD_HEIGHT  = 5
+HUD_HEIGHT  = 7
 HUD_POS_X   = 0
 HUD_POS_Y   = SCREEN_HEIGHT - HUD_HEIGHT
 
@@ -310,17 +310,17 @@ ITEM_TABLE_SIZE = ItemTableEnd - ItemTable
 ITEM_TABLE_WIDTH = 3
 ItemTable:
     .byte ((1 << 5) | 1), PLACEHOLDER_TILE, $00  ; villager amount
-    .byte ((2 << 5) | 1), PLACEHOLDER_TILE, $00  ; food amount
-    .byte ((3 << 5) | 1), PLACEHOLDER_TILE, $00  ; coin amount
+    .byte ((3 << 5) | 1), PLACEHOLDER_TILE, $00  ; food amount
+    .byte ((5 << 5) | 1), PLACEHOLDER_TILE, $00  ; coin amount
 
 ;; start of all items that can be selected in the menu
 SELECTABLE_ITEMS = ItemTableEnd - ItemTable
 SelectableItemTable:
-    .byte ((2 << 5) | 16), PLACEHOLDER_TILE, $FF
-    .byte ((2 << 5) | 18), PLACEHOLDER_TILE, $FF
-    .byte ((2 << 5) | 20), PLACEHOLDER_TILE, $FF
-    .byte ((2 << 5) | 22), PLACEHOLDER_TILE, $FF
-    .byte ((2 << 5) | 24), PLACEHOLDER_TILE, $FF
+    .byte ((3 << 5) | 16), PLACEHOLDER_TILE, $FF
+    .byte ((3 << 5) | 18), PLACEHOLDER_TILE, $FF
+    .byte ((3 << 5) | 20), PLACEHOLDER_TILE, $FF
+    .byte ((3 << 5) | 22), PLACEHOLDER_TILE, $FF
+    .byte ((3 << 5) | 24), PLACEHOLDER_TILE, $FF
 ItemTableEnd:
 
 ;; contains the functions called when drawing the a Item
