@@ -2,29 +2,27 @@
 ; Showing and Controlling the hud
 ; -----------------------------------------------
 
-;; @param: nothing
-;; @return: nothing
-;; InitHud: Initialises hud variables in ram
+;; ================ EXPORTS =====================
+
+;; InitHud
+;; Initialises hud variables in ram
 ;; registers used: A
 
-;; @param: nothing
-;; @return: nothing
-;; ShowHud: Draws the hud at the bottom of the screen
+;; ShowHud
+;; Draws the hud at the bottom of the screen
 ;; registers used: A, X, Y
+
+;; ==============================================
 
 .include "constants.asm"
 
-.export InitHud
+.export money
 .export ShowHud
+.import FillDecimalSegments
 
 ;; ========================================================
 ;;  HUD RENDER CONSTANTS
 ;; ========================================================
-
-.segment "BSS"
-corner_index: .res 1 ; when rendering the tiles this is the index that is kept for knowing what direction the hud border looks at
-
-.segment "CODE"
 
 HUD_WIDTH   = SCREEN_WIDTH
 HUD_HEIGHT  = 5
@@ -56,10 +54,11 @@ EMPTY_TILE          = $10
 
 PLACEHOLDER_TILE    = $11
 
-.proc InitHud
-    LDA #$00            ; reset value for ram
-    STA corner_index    ; store reset value in ram
-.endproc
+NUMBER_TILE         = $12
+
+.segment "BSS"
+    money: .res 5   ; reseve 5 bytes to be able to display up to 9 billion in display mode
+.segment "CODE"
 
 .proc ShowHud
 
@@ -184,7 +183,7 @@ loop:
     LDA #>HUD_POS_NAMETABLE ; load high byte of nametable pos
     ADC 0                   ; add carry of previous addition
 
-storePPUADDR:
+storeItemNametablePos:
     STA PPUADDR ; store high byte into ppuaddr
     TXA         ; transfer low byte stored in X to A
     STA PPUADDR ; store low byte into ppuaddr
@@ -193,14 +192,108 @@ storePPUADDR:
     TAX ; load index back into X
     INX ; increment index to get next byte of item
     
+storeItemTile:
     LDA ItemTable, X    ; get next byte (tileindex) of item at index X
     STA PPUDATA         ; load tileindex into nametable
 
-    INX         ; increment index int item table
-    DEY         ; decrement amount of items to process
-    BNE loop    ; if there are still items that need to be processed, continue
+    INX ; increment index to get type of the item
+
+handleItemType:
+    LDA ItemTable, X    ; load item type into A
+    CMP #$FF            ; compare item type to invalid type
+    BEQ skipItemType    ; skip item type if its equal to invalid type
+
+checkMoneyType:
+    CMP #$00            ; compare item type to money type
+    BNE skipItemType    ; skip item type if its not equal
+
+    ;; push item index onto the stack
+    TXA
+    PHA
+
+    JSR DrawSegments    ; draw money segments
+
+    ;; pop item index from stack
+    PLA
+    TAX
+
+skipItemType:
+    INX                     ; increment index int item table
+    CPX #ITEM_TABLE_SIZE    ; check if item index is at end
+    BNE loop                ; if there are still items that need to be processed, continue
 
 end:
+    RTS
+
+.endproc
+
+;; Draws a number to PPUDATA 
+;; @param A: number to draw
+.proc DrawSegments
+    LDX #$FF        ; byte index (FF since loop starts by incrementing X)
+
+    ;; check when the drawing needs to start (first nonzero segment)
+findFirstSegment:
+    INX                     ; increment current byte index (at start of loop, this value becomes 0)
+    CPX #$05                ; check if current byte index is less than total amount of bytes to check
+    BNE checkByteSegments   ; if byte index is not the total amount of bytes, check if byte has nonzero segments
+
+    ;; since entire value is 0, only draw 1 tile with zero
+    LDA #NUMBER_TILE    ; load first number tile into A
+    STA PPUDATA         ; store first number tile in nametable
+    RTS ; return since the byte index is not valid anymore
+
+checkByteSegments:
+    LDA money, X    ; load first 2 segments into A
+    TAY             ; save segments byte in Y since the AND operations will modify A
+
+    AND #$F0        ; check if first segment is 0
+    BNE drawLoop    ; if segment is non zero, start drawing
+
+    TYA                     ; reload original byte into A again
+    AND #$0F                ; check if seconds segment is 0
+    BEQ findFirstSegment    ; if second segment is also zero, check next byte
+
+    ;; this gets hit when only the second segment in the byte is non zero unaligning the rest of the writes
+drawUnalignedSegment:
+    TYA ; reload original byte int A
+
+    CLC             ; clear carry so it doesnt interfere
+    ADC #NUMBER_TILE ; add the first number tile index to the segment
+    STA PPUDATA     ; store number tile into nametable
+    
+    INX                 ; increment current byte index
+    CPX #$05            ; check if current byte index is still less than amount of bytes to check
+    BNE drawLoop ; draw segment byte if byte index is still valid
+
+    RTS ; return since byte index isnt valid anymore
+
+    ;; start drawing at current byte index, (this should be correct because the previous loop only increments X at start)
+drawLoop:
+    LDA money, X    ; load segments of current byte into A
+    TAY ; save segments byte into y
+    
+    ;; shift high nibble to low nibble
+    LSR
+    LSR
+    LSR
+    LSR
+
+    CLC             ; clear carry
+    ADC #NUMBER_TILE ; add index of first number tile
+    STA PPUDATA     ; store number tile into nametable
+
+    TYA         ; reload segment byte into A
+    AND #$0F    ; only keep the low byte
+
+    CLC             ; clear carry
+    ADC #NUMBER_TILE ; add index of number tile into nametable
+    STA PPUDATA     ; store number tile into nametable
+    
+    INX             ; increment current byte index
+    CPX #$05        ; check if current byte index is still less than amount of bytes to check
+    BNE drawLoop    ; draw segment byte if byte index is still valid
+
     RTS
 
 .endproc
@@ -208,22 +301,29 @@ end:
 ;; Item table stores positions of hud items
 ;; Byte 1: position
 ;;      bit 0-4: X position in hud
-;;      bit 5-7: Y position in hud (can only be 3 positions)
+;;      bit 5-7: Y position in hud
 ;; Byte 2:
 ;;      tile index
+;; Byte 3:
+;;      type function index
 ITEM_TABLE_SIZE = ItemTableEnd - ItemTable
-ITEM_TABLE_WIDTH = 2
+ITEM_TABLE_WIDTH = 3
 ItemTable:
-    .byte ((1 << 5) | 1), PLACEHOLDER_TILE  ; villager amount
-    .byte ((2 << 5) | 1), PLACEHOLDER_TILE  ; food amount
-    .byte ((3 << 5) | 1), PLACEHOLDER_TILE  ; coin amount
+    .byte ((1 << 5) | 1), PLACEHOLDER_TILE, $00  ; villager amount
+    .byte ((2 << 5) | 1), PLACEHOLDER_TILE, $00  ; food amount
+    .byte ((3 << 5) | 1), PLACEHOLDER_TILE, $00  ; coin amount
 
 ;; start of all items that can be selected in the menu
 SELECTABLE_ITEMS = ItemTableEnd - ItemTable
 SelectableItemTable:
-    .byte ((2 << 5) | 16), PLACEHOLDER_TILE
-    .byte ((2 << 5) | 18), PLACEHOLDER_TILE
-    .byte ((2 << 5) | 20), PLACEHOLDER_TILE
-    .byte ((2 << 5) | 22), PLACEHOLDER_TILE
-    .byte ((2 << 5) | 24), PLACEHOLDER_TILE
+    .byte ((2 << 5) | 16), PLACEHOLDER_TILE, $FF
+    .byte ((2 << 5) | 18), PLACEHOLDER_TILE, $FF
+    .byte ((2 << 5) | 20), PLACEHOLDER_TILE, $FF
+    .byte ((2 << 5) | 22), PLACEHOLDER_TILE, $FF
+    .byte ((2 << 5) | 24), PLACEHOLDER_TILE, $FF
 ItemTableEnd:
+
+;; contains the functions called when drawing the a Item
+TYPE_FUNCTION_TABLE_SIZE = (TypeFunctionTableEnd - TypeFunctionTable) / 2
+TypeFunctionTable:
+TypeFunctionTableEnd:

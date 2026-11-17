@@ -55,6 +55,12 @@ PaletteData:
 .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$22,$22,$04,$08,$08,$00,$08   ; placeholder tile
 
 .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$63,$63,$63,$63,$3E,$1C   ; 0
-.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$66,$66,$0C,$18,$3E,$3E   ; 1
-.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$0C,$1C,$3C,$2C,$0C,$0C,$0C,$0C   ; 2
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$0C,$1C,$3C,$2C,$0C,$0C,$0C,$0C   ; 1
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$66,$66,$0C,$18,$3E,$3E   ; 2
 .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$26,$0C,$0C,$26,$3E,$1C   ; 3
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$60,$C0,$D8,$FE,$FE,$18,$18,$18   ; 4
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3E,$3E,$30,$3C,$06,$06,$3E,$3C   ; 5
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3C,$62,$60,$7C,$66,$66,$7C,$38   ; 6
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3E,$7E,$46,$0C,$0C,$18,$18,$18   ; 7
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$7C,$C6,$C6,$7C,$C6,$C6,$FE,$38   ; 8
+.byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$66,$66,$3E,$06,$46,$3C   ; 9
