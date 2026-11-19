@@ -471,8 +471,8 @@ inputDone:                         ; END of input checks
 ;     JMP write                      ; Skip other states
 ; 
 ; paused:                            ; GAME PAUSED
-    LDA #$00                       ; grays
-    JMP write                      ; Skip other states
+;    LDA #$00                       ; grays
+;    JMP write                      ; Skip other states
 
 ; write:                             ; WRITE THE COLOR
 ;     STA $2007                      ; light green the color
