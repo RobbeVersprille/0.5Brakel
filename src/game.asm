@@ -5,7 +5,18 @@
 ;   Pijl omlaag  = punt omlaag bewegen
 ;   Pijl links   = punt naar links bewegen
 ;   Pijl rechts  = punt naar rechts bewegen
+
+.import PaletteData ; import the pallete data from chr.asm
+.import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
+
 .setcpu "6502"
+
+; Macros
+JOYPAD1 =  $4016; 
+SCREEN_WIDTH  = $20 ; TODO merge with viktor
+SCREEN_HEIGHT = $1E ; TODO merge with viktor
+HUD_HEIGHT    = $05 ; TODO merge with viktor
+
 .segment "HEADER" ; Header is meestal 16 bytes        
     .byte "NES", $1A           ; Herkenningsbytes voor een NES-ROM
     .byte 2                    ; 2 PRG-ROM banken van 16 KB = 32 KB
@@ -16,13 +27,36 @@
     .byte $00, $00, $00, $00   ; Extra ongebruikte headerbytes
 
 
-.segment "ZEROPAGE"        
-    buttons:     .res 1        ; Bewaart de huidige controllerknoppen
-    old_buttons: .res 1        ; Bewaart de knoppen van de vorige frame
-    dot_x:       .res 1        ; Horizontale positie van het punt
-    dot_y:       .res 1        ; Verticale positie van het punt
-    bg_color:    .res 1        ; Kleur van de achtergrond
-    dot_color:   .res 1        ; Kleur van het punt
+.segment "ZEROPAGE"   
+    cursor_x:         .res 1         ; x position of the cursor
+    cursor_y:         .res 1         ; y position of the cursor
+    buttons:          .res 1         ; New button input from current frame (A, B, Select, Start, Up, Down, Left, Right)
+    old_buttons:      .res 1         ; Old button input from previous frame (A, B, Select, Start, Up, Down, Left, Right)
+        A_BUTTON      = %10000000    ; bit 0 = A
+        B_BUTTON      = %01000000    ; bit 1 = B
+        SELECT_BUTTON = %00100000    ; bit 2 = Select
+        START_BUTTON  = %00010000    ; bit 3 = Start     
+        UP_BUTTON     = %00001000    ; bit 4 = Up    
+        DOWN_BUTTON   = %00000100    ; bit 5 = Down 
+        LEFT_BUTTON   = %00000010    ; bit 6 = Left
+        RIGHT_BUTTON  = %00000001    ; bit 7 = Right    
+ 
+    selected_building_mode: .res 1   ; Keeps track of the selected "building" (factory, depo, area, belt,....) 
+        DEPOSIT_STATE     = $00      ; bit 0 = Deposit
+        CONVEYER_STATE    = $01      ; bit 1 = Conveyer
+        AREA_SELECT_STATE = $02      ; bit 2 = Area Select
+        FACTORY_STATE     = $03      ; bit 3 = Factory     
+        REFINERY_STATE    = $04      ; bit 4 = Refinery      
+        COLLECTION_STATE  = $05      ; bit 5 = Collection     
+        PEOPLE_STATE      = $06      ; bit 6 = People 
+        DESTROY_STATE     = $07      ; bit 7 = Destroy
+
+    flags: .res 1
+        PAUSED_FLAG     = %00000001  ; bit 0 = paused
+        BUILD_MENU_FLAG = %00000010  ; bit 1 = build mode
+        BUILD_FLAG      = %00000100  ; bit 2 = is building flag
+        SELECTING_FLAG  = %00001000  ; bit 3 = selecting area
+    
 
 
 .segment "CODE"
@@ -48,6 +82,8 @@ reset:                             ; Reset label
     STA old_buttons
     STA selected_building_mode
     STA flags     
+
+    JSR InitOamData
 
 wait_vblank:                       ; Wait for the PPU to start
     BIT $2002       ; Reads the PPU-status; bit 7 = VBlank on/off
@@ -370,15 +406,10 @@ write:                             ; WRITE THE COLOR
     RTS
 .endproc
 
-.proc DrawCursor                   ; Draw the cursor
-
-    RTS
-.endproc
-
 ; INTERRUPTROUTINES
 nmi:                               ; NMI INTERUPT
     PHA                            ; push A to stack
-    JSR DrawCursor                 ; Draw the cursor
+    JSR TransferOamData            ; Transfer the OAM_Copy to the PPU
     JSR UpdateBackgroundColor      ; TEST FUNCTION TO SEE THE DIFFERENT STATES
 
     PLA                            ; Pull A from stack
@@ -387,16 +418,9 @@ nmi:                               ; NMI INTERUPT
 irq:                               ; IRA INTERUPT
     RTI                    ; Return from IRQ-interrupt
 
-PALETTE_SIZE = PaletteDataEnd - PaletteData
-PaletteData:
-    .byte $1a, $30, $28, $10
-PaletteDataEnd:
+
 
 .segment "VECTORS" ; INTERRUPTVECTOR
     .word nmi                  ; NMI-vector
     .word reset                ; RESET-vector
     .word irq                  ; IRQ/BRK-vector
-
-
-.segment "CHR" ; CHARACTER ROM
-    .byte $E7,$81,$81,$00,$00,$81,$81,$E7,$00,$00,$00,$00,$00,$00,$00,$00 ; Cursor sprite

@@ -12,6 +12,12 @@ CONVEYOR_DARK     = $00                    ; dark grey
 CONVEYOR_LIGHT    = $10                    ; light grey
 CONVEYOR_BLACK    = $0F                    ; black
 
+;TODO RENAME THESE VARIABLES
+CURSOR_COLOR1     = $1a
+CURSOR_COLOR2     = $30
+CURSOR_COLOR3     = $28
+CURSOR_COLOR4     = $10
+
 .segment "CODE"                       ; palette lives in PRG-ROM
 
 ; ====================================================
@@ -21,6 +27,7 @@ CONVEYOR_BLACK    = $0F                    ; black
 PaletteData:
     .repeat 8
         .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
+        .byte CURSOR_COLOR1, CURSOR_COLOR2, CURSOR_COLOR3, CURSOR_COLOR4
     .endrepeat
 
 ; ====================================================
@@ -42,3 +49,5 @@ PaletteData:
 .byte $FF,$66,$CC,$99,$99,$CC,$66,$FF,$FF,$99,$33,$66,$66,$33,$99,$FF ; left  B = horizontal B mirrored <
 .byte $99,$BD,$E7,$C3,$99,$BD,$E7,$C3,$E7,$C3,$99,$BD,$E7,$C3,$99,$BD ; up    A = vertical A flipped ^
 .byte $BD,$E7,$C3,$99,$BD,$E7,$C3,$99,$C3,$99,$BD,$E7,$C3,$99,$BD,$E7 ; up    B = vertical B flipped ^
+
+.byte $E7,$81,$81,$00,$00,$81,$81,$E7,$00,$00,$00,$00,$00,$00,$00,$00 ; Cursor sprite
