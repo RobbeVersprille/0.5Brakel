@@ -13,9 +13,14 @@
 
 ; Macros
 JOYPAD1 =  $4016; 
+START_ADDRESS_CURSOR_OAM = $00;
+CURSOR_TILE = $09
+CURSOR_PALETTE = $01
+
 SCREEN_WIDTH  = $20 ; TODO merge with viktor
 SCREEN_HEIGHT = $1E ; TODO merge with viktor
 HUD_HEIGHT    = $05 ; TODO merge with viktor
+
 
 .segment "HEADER" ; Header is meestal 16 bytes        
     .byte "NES", $1A           ; Herkenningsbytes voor een NES-ROM
@@ -84,6 +89,7 @@ reset:                             ; Reset label
     STA flags     
 
     JSR InitOamData
+    JSR InitCursor
 
 wait_vblank:                       ; Wait for the PPU to start
     BIT $2002       ; Reads the PPU-status; bit 7 = VBlank on/off
@@ -92,11 +98,12 @@ wait_vblank:                       ; Wait for the PPU to start
 vblank2:                           ; second vblank wait so the PPU is fully warmed up
     BIT $2002
     BPL vblank2
+    JSR LoadPalette                ; Loading the pallet data into memory
 
     LDA #%10000000
     STA $2000               ; enable NMI
-    LDA #%00001110
-    STA $2001               ; enable background rendering
+    LDA #%00011110
+    STA $2001               ; enable background rendering and sprite
 
 
     ; FOREVER LOOP
@@ -117,7 +124,7 @@ vblank2:                           ; second vblank wait so the PPU is fully warm
     BNE end                        ; Game paused skip al other btn handling (TODO CHECK: for now)
 
     JSR HandleButtonInput          ; Handles the button input and sets or calls the according flags/subroutines
-
+    JSR UpdateCursor               ; Update the cursor in the OAM_Copy
     LDA flags                      ; LOAD the flags
     AND #BUILD_MENU_FLAG           ; check bit for BUILD_MENU_FLAG of the flags is set
     BNE skipBuildMenu              ; Game not in build mode -> Skip
@@ -130,6 +137,67 @@ skipBuildMenu:                     ; Skip the build Mode logic
     JSR AreaSelectMode ; Game in area select mode
 skipAreaSelect:                    ; Skip Area select Mode logic
 end:                               ; END of MAIN
+    RTS
+.endproc
+
+.proc LoadPalette                  ; Loading pallet data into memory
+    BIT $2002               ; reset the $2006 latch
+    LDA #$3F
+    STA $2006
+    LDA #$00
+    STA $2006               ; PPU address = $3F00
+    LDX #$00
+@loop:
+    LDA PaletteData, X
+    STA $2007
+    INX
+    CPX #32                 ; 4 bg palettes + 4 sprite palettes
+    BNE @loop
+
+    LDA #$00                ; writing $2006 disturbs the scroll, so reset it
+    STA $2005
+    STA $2005
+    RTS
+.endproc
+
+.proc InitCursor                   ; Init the cursor attribute and pallet in the OAM_copy and sets its location to the center of the screen
+    ; start in the center of the tile grid
+    LDA #$0F
+    STA cursor_x
+    LDA #$0F - HUD_HEIGHT
+    STA cursor_y
+
+    LDX #START_ADDRESS_CURSOR_OAM
+    INX
+    LDA #CURSOR_TILE
+    STA oam_copy, X              ; byte 1: tile index
+    INX
+    LDA #CURSOR_PALETTE
+    STA oam_copy, X            ; byte 2: attributes
+
+    JSR UpdateCursor             ; fills in Y (byte 0) and X (byte 3)
+    RTS
+.endproc
+
+.proc UpdateCursor
+    LDX #START_ADDRESS_CURSOR_OAM
+    LDA cursor_y ; y index of cursor location
+    ASL  ; maal 2
+    ASL  ; maal 4 
+    ASL  ; maal 8 (sprite size = 8 pixels)
+    SEC
+    SBC #$01 ; minus 1 because yPos is delayed by 1 scan line
+    STA oam_copy, X
+    INX
+
+    INX ; Skip the pallet (set in init) (TODO implement ghost for building)
+    INX ; Skip the attributes (set in init) (TODO implement ghost for building)
+    LDA cursor_x 
+    ASL  ; maal 2
+    ASL  ; maal 4 
+    ASL  ; maal 8 (sprite size = 8 pixels)
+    STA oam_copy, X
+    INX
     RTS
 .endproc
 
@@ -299,18 +367,16 @@ checkUp:                           ; Checks UP button
     BEQ checkDown       ; If UP not pressed, skip UP-Button code and check DOWN-Button
 
     ; UP-BUTTON CODE HOLD:
-    DEC cursor_y        ; Decrement the cursor index
-    BMI checkOldUp      ; Skip reset if index != 0 
 
-    LDA #(SCREEN_HEIGHT - HUD_HEIGHT) ; Start index of the HUD
-    STA cursor_y            ; SET y index to max value
-
-    checkOldUp:             ; Check the old button state of UP   
-        LDA old_buttons     ; Load old button input
-        AND #UP_BUTTON      ; Isolate bit 3, UP-Button
-        BNE checkDown       ; If UP was pressed, skip new UP-Button press code and check DOWN-Button
+    LDA old_buttons     ; Load old button input
+    AND #UP_BUTTON      ; Isolate bit 3, UP-Button
+    BNE checkDown       ; If UP was pressed, skip new UP-Button press code and check DOWN-Button
 
     ; UP-BUTTON CODE NEW PRESS:
+    DEC cursor_y                          ; Move up one tile
+    BPL checkDown                         ; Branch if not 0 - 1 happend(cursor_y still >= 0)
+    LDA #(SCREEN_HEIGHT - HUD_HEIGHT) ; Went below 0, wrap to the last grid row
+    STA cursor_y
 
 checkDown:                         ; Checks DOWN button
     LDA buttons         ; Load button input
@@ -318,22 +384,18 @@ checkDown:                         ; Checks DOWN button
     BEQ checkLeft       ; If DOWN not pressed, skip DOWN-Button code and check LEFT-Button
 
     ; DOWN-BUTTON CODE HOLD:
-    INC cursor_y        ; Increment the cursor index
-    LDA cursor_y
-    SEC
-    SBC #(SCREEN_HEIGHT - HUD_HEIGHT) ; Subtract the max grid hight from this value
-    BPL checkOldDown        ; Skip reset if index != 0 
 
-    LDA 0                   ; Start index of the screen
-    STA cursor_y            ; SET y index to max value
-
-    checkOldDown:           ; Check the old button state of DOWN   
-        LDA old_buttons     ; Load old button input
-        AND #DOWN_BUTTON    ; Isolate bit 2, DOWN-Button
-        BNE checkLeft       ; If DOWN was pressed, skip new DOWN-Button press code and check LEFT-Button
+    LDA old_buttons     ; Load old button input
+    AND #DOWN_BUTTON    ; Isolate bit 2, DOWN-Button
+    BNE checkLeft       ; If DOWN was pressed, skip new DOWN-Button press code and check LEFT-Button
 
     ; DOWN-BUTTON CODE NEW PRESS:
-
+    INC cursor_y                          ; Move down one tile
+    LDA cursor_y
+    CMP #(SCREEN_HEIGHT - HUD_HEIGHT)     ; First HUD row
+    BCC checkLeft                         ; Still inside the grid, no wrap needed (carry = clear)
+    LDA #$00                              ; Past the last grid row, wrap to the top
+    STA cursor_y
 checkLeft:                         ; Checks LEFT button
     LDA buttons         ; Load button input
     AND #LEFT_BUTTON    ; Isolate bit 1, LEFT-Button
@@ -346,6 +408,10 @@ checkLeft:                         ; Checks LEFT button
     BNE checkRight      ; If LEFT was pressed, skip new LEFT-Button press code and check RIGHT-Button
 
     ; LEFT-BUTTON CODE NEW PRESS:
+    DEC cursor_x                        ; Move left one tile
+    BPL checkRight                      ; cursor_x >= 0, no wrap needed
+    LDA #(SCREEN_WIDTH - 1)             ; Went below 0, wrap to the last column
+    STA cursor_x
 
 checkRight:                        ; Checks RIGHT button
     LDA buttons         ; Load button input
@@ -359,6 +425,13 @@ checkRight:                        ; Checks RIGHT button
     BNE inputDone       ; If RIGHT was pressed, skip new RIGHT-Button press code
 
     ; RIGHT-BUTTON CODE NEW PRESS:
+    INC cursor_x                        ; Move right one tile
+    LDA cursor_x
+    CMP #SCREEN_WIDTH                   ; First column outside the screen
+    BCC inputDone                       ; Still inside the screen, no wrap needed
+    LDA #$00                            ; Past the last column, wrap to the left
+    STA cursor_x
+
 
 inputDone:                         ; END of input checks
     RTS ; Return to Main
@@ -410,7 +483,7 @@ write:                             ; WRITE THE COLOR
 nmi:                               ; NMI INTERUPT
     PHA                            ; push A to stack
     JSR TransferOamData            ; Transfer the OAM_Copy to the PPU
-    JSR UpdateBackgroundColor      ; TEST FUNCTION TO SEE THE DIFFERENT STATES
+   ; JSR UpdateBackgroundColor      ; TEST FUNCTION TO SEE THE DIFFERENT STATES
 
     PLA                            ; Pull A from stack
     RTI                            ; Return from NMI-interrupt
