@@ -124,7 +124,7 @@ vblank2:                           ; second vblank wait so the PPU is fully warm
     BNE end                        ; Game paused skip al other btn handling (TODO CHECK: for now)
 
     JSR HandleButtonInput          ; Handles the button input and sets or calls the according flags/subroutines
-    JSR UpdateCursor               ; Update the cursor in the OAM_Copy
+
     LDA flags                      ; LOAD the flags
     AND #BUILD_MENU_FLAG           ; check bit for BUILD_MENU_FLAG of the flags is set
     BNE skipBuildMenu              ; Game not in build mode -> Skip
@@ -179,7 +179,7 @@ end:                               ; END of MAIN
     RTS
 .endproc
 
-.proc UpdateCursor
+.proc UpdateCursor                 ; Updates the cursor x an y pos in the oam copy for its position on the grid
     LDX #START_ADDRESS_CURSOR_OAM
     LDA cursor_y ; y index of cursor location
     ASL  ; maal 2
@@ -200,7 +200,9 @@ end:                               ; END of MAIN
     INX
     RTS
 .endproc
+.proc UpdateCursorInHud            ; Updates the cursor x an y pos in the oam copy for its position on in the HUD
 
+.endproc
 .proc HandlePaused                 ; Handles/Updates the paused state of the game
     LDA buttons         ; Load button input
     AND #START_BUTTON  ; Isolate bit 4, START-Button
@@ -264,6 +266,7 @@ loopToBack:                        ; Reset the selected building mode to #DEPOSI
     STA selected_building_mode 
 
 skipRight:                         ; Skip the logic for Right cursor movement inside the HUD
+    JSR UpdateCursorInHud          ; Updates the cursor to be on the correct Hud Button
     RTS
 .endproc
 
@@ -342,13 +345,13 @@ checkB:                            ; Checks B button
 checkSelect:                       ; Checks SELECT button
     LDA buttons         ; Load button input
     AND #SELECT_BUTTON  ; Isolate bit 5, SELECT-Button
-    BEQ checkStart      ; If SELECT not pressed, skip SELECT-Button code and check START-Button
+    BEQ checkBuildState      ; If SELECT not pressed, skip SELECT-Button code and check build state
 
     ; SELECT-BUTTON CODE HOLD:
 
     LDA old_buttons     ; Load old button input
     AND #SELECT_BUTTON  ; Isolate bit 5, SELECT-Button
-    BNE checkStart      ; If SELECT was pressed, skip new SELECT-Button press code and check START-Button
+    BNE checkBuildState      ; If SELECT was pressed, skip new SELECT-Button press code and check build state
 
     ; SELECT-BUTTON CODE NEW PRESS:
 
@@ -360,14 +363,14 @@ checkSelect:                       ; Checks SELECT button
     LDA #DEPOSIT_STATE ; Set cursor to deposit
     STA selected_building_mode ; Store the new flag 
     
-checkStart:                        ; Checks START in Handle Paused so it gets handled before the other buttons for pausing reasons (no check here)
+checkBuildState:                        ; Checks the build state before continueing with the D-pad checks if in build mode skip the D-PAD checks here
     LDA flags
     AND #BUILD_MENU_FLAG
     BEQ checkUp             ; menu closed, movement allowed
     LDA flags
     AND #BUILD_FLAG
     BEQ inputDone           ; in menu but not building, no grid movement
-    
+
 checkUp:                           ; Checks UP button
     LDA buttons         ; Load button input
     AND #UP_BUTTON      ; Isolate bit 3, UP-Button
@@ -440,7 +443,9 @@ checkRight:                        ; Checks RIGHT button
     STA cursor_x
 
 
+
 inputDone:                         ; END of input checks
+    JSR UpdateCursor               ; Update the cursor in the OAM_Copy
     RTS ; Return to Main
 .endproc
 
