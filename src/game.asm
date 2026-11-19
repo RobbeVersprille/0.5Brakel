@@ -361,6 +361,13 @@ checkSelect:                       ; Checks SELECT button
     STA selected_building_mode ; Store the new flag 
     
 checkStart:                        ; Checks START in Handle Paused so it gets handled before the other buttons for pausing reasons (no check here)
+    LDA flags
+    AND #BUILD_MENU_FLAG
+    BEQ checkUp             ; menu closed, movement allowed
+    LDA flags
+    AND #BUILD_FLAG
+    BEQ inputDone           ; in menu but not building, no grid movement
+    
 checkUp:                           ; Checks UP button
     LDA buttons         ; Load button input
     AND #UP_BUTTON      ; Isolate bit 3, UP-Button
@@ -437,53 +444,10 @@ inputDone:                         ; END of input checks
     RTS ; Return to Main
 .endproc
 
-; .proc UpdateBackgroundColor        ; TEMPERARY HELPER FUNCTION TO SHOW THE STATES
-;     LDA $2002               ; reset the $2006 write latch
-;     LDA #$3F
-;     STA $2006
-;     LDA #$00
-;     STA $2006               ; PPU address = $3F00 (universal background color)
-; 
-;     LDA flags
-;     AND #PAUSED_FLAG        
-;     BNE paused ; Jump to pause because game is paused 
-; 
-;     LDA flags
-;     AND #BUILD_FLAG      
-;     BNE isBuilding ; Jump to is building because you are in the build menu and you've selected what to build (restricted by input handler)
-; 
-;     LDA flags
-;     AND #BUILD_MENU_FLAG        
-;     BNE isBuildMode ; Jump to build menu because you are in the build menu and you've not selected what to build
-; 
-; 
-; 
-;     ;No flags set (Main game)
-;     LDA #$2b                ; light green
-;     JMP write               ; Skip other states
-; 
-; isBuildMode:                       ; GAME IN HUD MODE (SELECTING BUILDING IN HUD)
-;     LDA #$16                       ; red
-;     JMP write                      ; Skip other states
-; 
-; isBuilding:                        ; GAME IN BUILD MODE (BUILING SELECTED BUILDING)
-;     LDA #$01                       ; Blue
-;     JMP write                      ; Skip other states
-; 
-; paused:                            ; GAME PAUSED
-;    LDA #$00                       ; grays
-;    JMP write                      ; Skip other states
-
-; write:                             ; WRITE THE COLOR
-;     STA $2007                      ; light green the color
-;     RTS
-; .endproc
-
 ; INTERRUPTROUTINES
 nmi:                               ; NMI INTERUPT
     PHA                            ; push A to stack
     JSR TransferOamData            ; Transfer the OAM_Copy to the PPU
-   ;JSR UpdateBackgroundColor      ; TEST FUNCTION TO SEE THE DIFFERENT STATES
 
     PLA                            ; Pull A from stack
     RTI                            ; Return from NMI-interrupt
