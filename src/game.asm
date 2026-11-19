@@ -375,7 +375,7 @@ checkUp:                           ; Checks UP button
     ; UP-BUTTON CODE NEW PRESS:
     DEC cursor_y                          ; Move up one tile
     BPL checkDown                         ; Branch if not 0 - 1 happend(cursor_y still >= 0)
-    LDA #(SCREEN_HEIGHT - HUD_HEIGHT) ; Went below 0, wrap to the last grid row
+    LDA #(SCREEN_HEIGHT - HUD_HEIGHT)     ; Went below 0, wrap to the last grid row
     STA cursor_y
 
 checkDown:                         ; Checks DOWN button
@@ -437,53 +437,53 @@ inputDone:                         ; END of input checks
     RTS ; Return to Main
 .endproc
 
-.proc UpdateBackgroundColor        ; TEMPERARY HELPER FUNCTION TO SHOW THE STATES
-    LDA $2002               ; reset the $2006 write latch
-    LDA #$3F
-    STA $2006
-    LDA #$00
-    STA $2006               ; PPU address = $3F00 (universal background color)
-
-    LDA flags
-    AND #PAUSED_FLAG        
-    BNE paused ; Jump to pause because game is paused 
-
-    LDA flags
-    AND #BUILD_FLAG      
-    BNE isBuilding ; Jump to is building because you are in the build menu and you've selected what to build (restricted by input handler)
-
-    LDA flags
-    AND #BUILD_MENU_FLAG        
-    BNE isBuildMode ; Jump to build menu because you are in the build menu and you've not selected what to build
-
-
-
-    ;No flags set (Main game)
-    LDA #$2b                ; light green
-    JMP write               ; Skip other states
-
-isBuildMode:                       ; GAME IN HUD MODE (SELECTING BUILDING IN HUD)
-    LDA #$16                       ; red
-    JMP write                      ; Skip other states
-
-isBuilding:                        ; GAME IN BUILD MODE (BUILING SELECTED BUILDING)
-    LDA #$01                       ; Blue
-    JMP write                      ; Skip other states
-
-paused:                            ; GAME PAUSED
+; .proc UpdateBackgroundColor        ; TEMPERARY HELPER FUNCTION TO SHOW THE STATES
+;     LDA $2002               ; reset the $2006 write latch
+;     LDA #$3F
+;     STA $2006
+;     LDA #$00
+;     STA $2006               ; PPU address = $3F00 (universal background color)
+; 
+;     LDA flags
+;     AND #PAUSED_FLAG        
+;     BNE paused ; Jump to pause because game is paused 
+; 
+;     LDA flags
+;     AND #BUILD_FLAG      
+;     BNE isBuilding ; Jump to is building because you are in the build menu and you've selected what to build (restricted by input handler)
+; 
+;     LDA flags
+;     AND #BUILD_MENU_FLAG        
+;     BNE isBuildMode ; Jump to build menu because you are in the build menu and you've not selected what to build
+; 
+; 
+; 
+;     ;No flags set (Main game)
+;     LDA #$2b                ; light green
+;     JMP write               ; Skip other states
+; 
+; isBuildMode:                       ; GAME IN HUD MODE (SELECTING BUILDING IN HUD)
+;     LDA #$16                       ; red
+;     JMP write                      ; Skip other states
+; 
+; isBuilding:                        ; GAME IN BUILD MODE (BUILING SELECTED BUILDING)
+;     LDA #$01                       ; Blue
+;     JMP write                      ; Skip other states
+; 
+; paused:                            ; GAME PAUSED
     LDA #$00                       ; grays
     JMP write                      ; Skip other states
 
-write:                             ; WRITE THE COLOR
-    STA $2007                      ; light green the color
-    RTS
-.endproc
+; write:                             ; WRITE THE COLOR
+;     STA $2007                      ; light green the color
+;     RTS
+; .endproc
 
 ; INTERRUPTROUTINES
 nmi:                               ; NMI INTERUPT
     PHA                            ; push A to stack
     JSR TransferOamData            ; Transfer the OAM_Copy to the PPU
-   ; JSR UpdateBackgroundColor      ; TEST FUNCTION TO SEE THE DIFFERENT STATES
+   ;JSR UpdateBackgroundColor      ; TEST FUNCTION TO SEE THE DIFFERENT STATES
 
     PLA                            ; Pull A from stack
     RTI                            ; Return from NMI-interrupt
