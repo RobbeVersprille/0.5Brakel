@@ -182,9 +182,9 @@ end:                               ; END of MAIN
 .proc UpdateCursor                 ; Updates the cursor x an y pos in the oam copy for its position on the grid
     LDX #START_ADDRESS_CURSOR_OAM
     LDA cursor_y ; y index of cursor location
-    ASL  ; maal 2
-    ASL  ; maal 4 
-    ASL  ; maal 8 (sprite size = 8 pixels)
+    ASL  ; multiply by 2
+    ASL  ; multiply by 4 
+    ASL  ; multiply by 8 (sprite size = 8 pixels)
     SEC
     SBC #$01 ; minus 1 because yPos is delayed by 1 scan line
     STA oam_copy, X
@@ -193,9 +193,9 @@ end:                               ; END of MAIN
     INX ; Skip the pallet (set in init) (TODO implement ghost for building)
     INX ; Skip the attributes (set in init) (TODO implement ghost for building)
     LDA cursor_x 
-    ASL  ; maal 2
-    ASL  ; maal 4 
-    ASL  ; maal 8 (sprite size = 8 pixels)
+    ASL  ; multiply by 2
+    ASL  ; multiply by 4 
+    ASL  ; multiply by 8 (sprite size = 8 pixels)
     STA oam_copy, X
     INX
     RTS
