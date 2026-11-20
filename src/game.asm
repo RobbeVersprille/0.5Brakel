@@ -30,6 +30,8 @@ CURSOR_PALETTE = $01;
 
 
 .segment "ZEROPAGE"   
+    temp:             .res 10        ; to store temperary shit for various functions
+    sfx_channel:      .res 1         ; sound effect channel to use  ;; Code from the book
     cursor_x:         .res 1         ; x position of the cursor
     cursor_y:         .res 1         ; y position of the cursor
     buttons:          .res 1         ; New button input from current frame (A, B, Select, Start, Up, Down, Left, Right)
@@ -63,6 +65,31 @@ CURSOR_PALETTE = $01;
 
 
 .segment "CODE"
+;;code from the book
+; FamiStudio config.
+FAMISTUDIO_CFG_EXTERNAL = 1
+FAMISTUDIO_CFG_DPCM_SUPPORT = 1
+FAMISTUDIO_CFG_SFX_SUPPORT = 1
+FAMISTUDIO_CFG_SFX_STREAMS = 2
+FAMISTUDIO_CFG_EQUALIZER = 1
+FAMISTUDIO_USE_VOLUME_TRACK = 1
+FAMISTUDIO_USE_PITCH_TRACK = 1
+FAMISTUDIO_USE_SLIDE_NOTES = 1
+FAMISTUDIO_USE_VIBRATO = 1
+FAMISTUDIO_USE_ARPEGGIO = 1
+FAMISTUDIO_CFG_SMOOTH_VIBRATO = 1
+FAMISTUDIO_USE_RELEASE_NOTES = 1
+FAMISTUDIO_DPCM_OFF = $e000
+
+
+; CA65-specifc config.
+.define FAMISTUDIO_CA65_ZP_SEGMENT ZEROPAGE
+.define FAMISTUDIO_CA65_RAM_SEGMENT BSS
+.define FAMISTUDIO_CA65_CODE_SEGMENT CODE
+
+.include "famistudio_ca65.s"
+.include "Songs/BtnPressed_SFX.s"
+;;
 
 reset:                             ; Reset label
     SEI             ; Disable CPU interrupts
@@ -78,6 +105,7 @@ reset:                             ; Reset label
     STX PPU_CTRL    ; Disable NMI
     STX PPU_MASK    ; Disable rendering
     STX $4010       ; Disable DMC IRQ
+    STX $4015       ; Disable APU channels
 
     LDA #$FF                    ; Y = $FF hides a sprite
     LDX #$00                    ; X = byte index in the OAM shadow page
@@ -92,6 +120,7 @@ clearOam:
     STA old_buttons
     STA selected_building_mode
     STA flags     
+    STA sfx_channel
 
     JSR InitOamData
     JSR InitCursor
@@ -276,11 +305,45 @@ attributeLoop:
 
     ; Toggle paused flag
     LDA flags        ; Load flags
-    EOR #PAUSED_FLAG ; Flip bit 0 (Paused flag)
+    EOR #PAUSED_FLAG ; Flip (Paused flag)
     STA flags        ; Save new state
+    
+    AND #PAUSED_FLAG    ; test the flag we just stored
+    BNE now_paused
+
+    LDA #1              ; now unpaused -> SFX 1
+    JSR play_sfx
+    JMP end
+
+now_paused:
+    LDA #0              ; now paused -> SFX 0
+    JSR play_sfx
+
 end:                               ; End of the HandlePaused logic
     RTS
 .endproc
+
+;*********************************************************
+; Play a sound effect
+; a = sound effect to play
+; sfx_channel = sound effects channel to use
+;*********************************************************
+.proc play_sfx
+    sta temp+9                   ; Saves the sound effect number
+    tya                          ; Saves the current register values
+    pha                         
+    txa
+    pha
+    lda temp+9                    ; Gets the sound effect number
+    ldx sfx_channel               ; Chooses the channel to play the sound effect on
+    jsr famistudio_sfx_play
+    pla                           ; Restores the register values
+    tax
+    pla
+    tay
+    rts
+.endproc
+
 
 .proc BuildMode                    ; Logic for handling the Build Mode
     LDA flags
@@ -525,7 +588,8 @@ nmi:                               ; NMI INTERUPT
     STA PPU_SCROLL              ; y scroll
     LDA #$01                    ; tell the main loop that a new frame started
     STA nmi_flag                ; ...
-
+    jsr famistudio_update          ; code from the book
+    
     PLA                         ; restore Y
     TAY                         ; ...
     PLA                         ; restore X
