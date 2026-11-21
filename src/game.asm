@@ -3,7 +3,7 @@
 .import ConveyorTick
 .import ConveyorUpload
 .import PlaceConveyor                 ; write one conveyor tile (PPU address in A / X)      ONLY USE IN NMI
-.import RotateConveyor                ; turn the direction that PlaceConveyor uses          ONLY USE IN NMI
+.import RotateConveyor                ; turn the direction that PlaceConveyor uses
 .import RemoveConveyor                ; remove one conveyor tile (PPU address in A / X)     ONLY USE IN NMI
 
 .import PaletteData ; import the pallete data from chr.asm
