@@ -89,6 +89,7 @@ FAMISTUDIO_DPCM_OFF = $e000
 
 .include "famistudio_ca65.s"
 .include "Songs/BtnPressed_SFX.s"
+.include "Songs/Thibe_Track.s"
 ;;
 
 reset:                             ; Reset label
@@ -129,12 +130,13 @@ clearOam:
 
     ;; code from the book
     lda #1
-    ldx #0
-    ldy #0
+    ldx #.lobyte(music_data_untitled)
+    ldy #.hibyte(music_data_untitled)
     jsr famistudio_init
     ldx #.lobyte(sounds)
     ldy #.hibyte(sounds)
     jsr famistudio_sfx_init
+
     ;;
 
 wait_vblank:                       ; Wait for the PPU to start
@@ -163,6 +165,10 @@ reset_scroll:
     STA PPU_SCROLL   ; set x-scroll to 0
     STA PPU_SCROLL   ; set y-scroll to 0
 
+    ;; code from book
+    lda #0           ; Select song 1
+    jsr play_music
+    ;;
 
     ; FOREVER LOOP
     forever:
@@ -348,6 +354,25 @@ end:                               ; End of the HandlePaused logic
     lda temp+9                    ; Gets the sound effect number
     ldx sfx_channel               ; Chooses the channel to play the sound effect on
     jsr famistudio_sfx_play
+    pla                           ; Restores the register values
+    tax
+    pla
+    tay
+    rts
+.endproc
+
+;*********************************************************
+; Play a music track
+; a = number of the music track to play
+;*********************************************************
+.proc play_music
+    sta temp+9                    ; Saves the song number
+    tya                           ; Saves the current register values
+    pha
+    txa
+    pha
+    lda temp+9                    ; Gets the music number
+    jsr famistudio_music_play
     pla                           ; Restores the register values
     tax
     pla
