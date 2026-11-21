@@ -289,6 +289,7 @@ attributeLoop:
 .endproc
 .proc UpdateCursorInHud            ; Updates the cursor x an y pos in the oam copy for its position on in the HUD
     RTS
+
 .endproc
 .proc HandlePaused                 ; Handles/Updates the paused state of the game
     LDA buttons         ; Load button input
@@ -307,6 +308,18 @@ attributeLoop:
     LDA flags        ; Load flags
     EOR #PAUSED_FLAG ; Flip (Paused flag)
     STA flags        ; Save new state
+    
+    AND #PAUSED_FLAG    ; test the flag we just stored
+    BNE now_paused
+
+    LDA #1              ; now unpaused -> SFX 1
+    JSR play_sfx
+    JMP end
+
+now_paused:
+    LDA #0              ; now paused -> SFX 0
+    JSR play_sfx
+
     
     AND #PAUSED_FLAG    ; test the flag we just stored
     BNE now_paused
