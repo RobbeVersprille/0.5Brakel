@@ -29,16 +29,16 @@
 ;;  LOCAL HUD CONSTANTS
 ;; ========================================================
 
-HUD_BACKGROUND_PALETTE = $00
+HUD_BACKGROUND_PALETTE = %10101010  ;; tiles in quad are palette 2
 
 ;; first index of hud in nametable as a 1D position
 HUD_OFFSET = (HUD_POS_Y * HUD_WIDTH) + HUD_POS_X
 
-HUD_POS_NAMETABLE = VRAM_NAMETABLE_0 + HUD_OFFSET
+HUD_POS_NAMETABLE = NAMETABLE_0 + HUD_OFFSET
 HUD_POS_ATTRTABLE = $23C0 | (HUD_OFFSET & $0C00) | ((HUD_OFFSET >> 4) & $38) | ((HUD_OFFSET >> 2) & $07)
 
-HUD_ATTRIBUTE_WIDTH = HUD_WIDTH / ATTRSIZE
-HUD_ATTRIBUTE_HEIGHT = (HUD_HEIGHT / ATTRSIZE) + 2
+HUD_ATTRIBUTE_WIDTH = HUD_WIDTH / ATTR_DIM
+HUD_ATTRIBUTE_HEIGHT = (HUD_HEIGHT / ATTR_DIM) + 2
 
 ;; ========================================================
 ;;  MACROS
@@ -138,14 +138,14 @@ end:
 .proc FillNametable
     ;; setup ppu nametable writing
     LDA #>HUD_POS_NAMETABLE ; load high byte of hud position into A
-    STA PPUADDR             ; store high byte of hud position into ppuaddr
+    STA PPU_ADDR             ; store high byte of hud position into ppuaddr
     LDA #<HUD_POS_NAMETABLE ; load low byte of hud position into A
-    STA PPUADDR             ; store low byte of hud position into ppuaddr
+    STA PPU_ADDR             ; store low byte of hud position into ppuaddr
 
 drawTopLine:
     ;; draw top left corner of the hud screen
     LDA #TOP_LEFT_CORNER ; load index of top left corner tile
-    STA PPUDATA         ; store top left corner tile in nametable
+    STA PPU_DATA         ; store top left corner tile in nametable
 
     ;; draw horizontal lines of top row
     LDA #HORIZONTAL_EDGE ; load index of horizontal edge tile
@@ -154,7 +154,7 @@ drawTopLine:
 
     ;; draw top right corner of the hud screen
     LDA #TOP_RIGHT_CORNER    ; load index of top right corner tile
-    STA PPUDATA             ; store top right corner tile in nametable
+    STA PPU_DATA             ; store top right corner tile in nametable
 
 drawMiddleLines:
     LDY #HUD_HEIGHT - 2  ; amount of rows to draw
@@ -162,7 +162,7 @@ drawMiddleLines:
 drawMiddleLine:
     ;; draw first left border tile
     LDA #VERTICAL_EDGE   ; load index of vertical edge tile
-    STA PPUDATA         ; store vertical edge tile in nametable
+    STA PPU_DATA         ; store vertical edge tile in nametable
 
     ;; draw empty tiles over span of the hud
     LDA #EMPTY_TILE      ; load index of empty tile
@@ -171,7 +171,7 @@ drawMiddleLine:
 
     ;; draw final left border tile
     LDA #VERTICAL_EDGE
-    STA PPUDATA
+    STA PPU_DATA
 
     DEY                 ; decrement amount of rows to draw
     BNE drawMiddleLine  ; keep drawing lines, while amount of rows to draw is not 0
@@ -179,7 +179,7 @@ drawMiddleLine:
 drawBottomLine:
     ;; draw bottom left corner tile
     LDA #BOTTOM_LEFT_CORNER  ; load index of bottom left corner tile
-    STA PPUDATA             ; store bottom left corner tile into nametable
+    STA PPU_DATA             ; store bottom left corner tile into nametable
 
     ;; draw horizontal lines
     LDA #HORIZONTAL_EDGE ; load index of horizontal tile
@@ -188,7 +188,7 @@ drawBottomLine:
 
     ;; draw bottom right corner tile
     LDA #BOTTOM_RIGHT_CORNER ; load index of bottom right corner tile
-    STA PPUDATA             ; store bottom right corner tile into nametable
+    STA PPU_DATA             ; store bottom right corner tile into nametable
 
 end:
     RTS
@@ -198,7 +198,7 @@ end:
 ;; @param A: which tile index to draw
 ;; @param X: amount of times to draw
 .proc DrawLine
-    STA PPUDATA     ; store specified tile in nametable
+    STA PPU_DATA     ; store specified tile in nametable
     DEX             ; decrement amount to draw
     BNE DrawLine    ; keep drawing while amount is not 0
 
@@ -209,16 +209,16 @@ end:
 .proc FillAttributeMap
     ;; set ppuaddr to hud pos in attribute table
     LDA #>HUD_POS_ATTRTABLE ; high byte of hud position in attribute table
-    STA PPUADDR             ; store high byte in ppuaddr
+    STA PPU_ADDR             ; store high byte in ppuaddr
     LDA #<HUD_POS_ATTRTABLE ; low byte of hud position in attribute table
-    STA PPUADDR             ; store low byte in ppuaddr
+    STA PPU_ADDR             ; store low byte in ppuaddr
 
     LDX #HUD_ATTRIBUTE_WIDTH    ; load width into x (column counter)
     LDY #HUD_ATTRIBUTE_HEIGHT   ; load height into y (row counter)
     LDA #HUD_BACKGROUND_PALETTE ; load menu background color into a
 
 @loop:
-    STA PPUDATA ; store background palette in ppudata
+    STA PPU_DATA ; store background palette in ppudata
     DEX         ; decrement column counter
     BNE @loop   ; if counter did not reach 0, continue looping
 
@@ -246,9 +246,9 @@ loop:
     ADC #$00                   ; add carry of previous addition
 
 storeItemNametablePos:
-    STA PPUADDR ; store high byte into ppuaddr
+    STA PPU_ADDR ; store high byte into ppuaddr
     TXA         ; transfer low byte stored in X to A
-    STA PPUADDR ; store low byte into ppuaddr
+    STA PPU_ADDR ; store low byte into ppuaddr
     
     PLA ; get index back from stack  
     TAX ; load index back into X
@@ -256,7 +256,7 @@ storeItemNametablePos:
     
 storeItemTile:
     LDA ItemTable, X    ; get next byte (tileindex) of item at index X
-    STA PPUDATA         ; load tileindex into nametable
+    STA PPU_DATA         ; load tileindex into nametable
 
     INX ; increment index to get type of the item
 
@@ -308,7 +308,7 @@ end:
 
 .endproc
 
-;; Draws a number to PPUDATA
+;; Draws a number to PPU_DATA
 ;; @param segments_copy: copy data of segments bytes
 ;; @param segments_size: amount of segments bytes
 .proc DrawSegments
@@ -321,8 +321,8 @@ findFirstSegment:
     BNE checkByteSegments   ; if byte index is not the total amount of bytes, check if byte has nonzero segments
 
     ;; since entire value is 0, only draw 1 tile with zero
-    LDA #NUMBER_TILE    ; load first number tile into A
-    STA PPUDATA         ; store first number tile in nametable
+    LDA #NUMBER_TILE_0    ; load first number tile into A
+    STA PPU_DATA         ; store first number tile in nametable
     RTS ; return since the byte index is not valid anymore
 
 checkByteSegments:
@@ -341,8 +341,8 @@ drawUnalignedSegment:
     TYA ; reload original byte int A
 
     CLC             ; clear carry so it doesnt interfere
-    ADC #NUMBER_TILE ; add the first number tile index to the segment
-    STA PPUDATA     ; store number tile into nametable
+    ADC #NUMBER_TILE_0 ; add the first number tile index to the segment
+    STA PPU_DATA     ; store number tile into nametable
     
     INX                 ; increment current byte index
     CPX segments_size   ; check if current byte index is still less than amount of bytes to check
@@ -362,15 +362,15 @@ drawLoop:
     LSR
 
     CLC             ; clear carry
-    ADC #NUMBER_TILE ; add index of first number tile
-    STA PPUDATA     ; store number tile into nametable
+    ADC #NUMBER_TILE_0 ; add index of first number tile
+    STA PPU_DATA     ; store number tile into nametable
 
     TYA         ; reload segment byte into A
     AND #$0F    ; only keep the low byte
 
     CLC             ; clear carry
-    ADC #NUMBER_TILE ; add index of number tile into nametable
-    STA PPUDATA     ; store number tile into nametable
+    ADC #NUMBER_TILE_0 ; add index of number tile into nametable
+    STA PPU_DATA     ; store number tile into nametable
     
     INX                 ; increment current byte index
     CPX segments_size   ; check if current byte index is still less than amount of bytes to check
