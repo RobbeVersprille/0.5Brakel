@@ -6,34 +6,18 @@
 .import RotateConveyor                ; turn the direction that PlaceConveyor uses
 .import RemoveConveyor                ; remove one conveyor tile (PPU address in A / X)     ONLY USE IN NMI
 
+.include "constants.asm"
+
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
+.import ShowHud, InitHud
 
 .setcpu "6502"
 
 ; Macros
 JOYPAD1 =  $4016; 
 START_ADDRESS_CURSOR_OAM = $00;
-CURSOR_TILE = $05;
 CURSOR_PALETTE = $01;
-
-SCREEN_WIDTH  = $20 ; TODO merge with viktor
-SCREEN_HEIGHT = $1E ; TODO merge with viktor
-HUD_HEIGHT    = $05 ; TODO merge with viktor
-
-; PPU registers
-PPU_CTRL = $2000                      ; NMI enable, pattern tables, nametable select
-PPU_MASK = $2001                      ; show / hide background and sprites
-PPU_STATUS = $2002                    ; VBlank flag, reading it resets the address latch
-PPU_SCROLL = $2005                    ; scroll position, written twice (x then y)
-PPU_ADDR = $2006                      ; VRAM address, written twice (high then low)
-PPU_DATA = $2007                      ; VRAM data
-
-; Nametable
-NAMETABLE_0 = $2000                   ; first tile of nametable 0
-ATTRIBUTE_0 = $23C0                   ; first attribute byte of nametable 0
-PALETTE_1_ALL = %01010101             ; attribute byte: all four 16x16 blocks use background palette 1
-PALETTE_BYTES = 12                    ; size of PaletteData in chr.asm (3 palettes of 4 colours)
 
 .segment "HEADER" ; Header is meestal 16 bytes        
     .byte "NES", $1A           ; Herkenningsbytes voor een NES-ROM
@@ -112,6 +96,7 @@ clearOam:
     JSR InitOamData
     JSR InitCursor
     JSR InitConveyor            ; conveyor animation and items start from step 0
+    JSR InitHud
 
 wait_vblank:                       ; Wait for the PPU to start
     BIT PPU_STATUS        ; Reads the PPU-status; bit 7 = VBlank on/off
@@ -125,11 +110,20 @@ vblank2:                           ; second vblank wait so the PPU is fully warm
     ; Rendering is still off, so the PPU may be written at any time
     JSR LoadPalette                ; Loading the pallet data into memory
     JSR ClearNametable          ; empty tiles + attribute table
+    
+    JSR ShowHud
 
-    LDA #%10000000
-    STA PPU_CTRL               ; enable NMI
-    LDA #%00011110
-    STA PPU_MASK               ; enable background rendering and sprite
+enable_rendering:
+	lda #%10000000	; Enable NMI
+	sta PPU_CTRL
+	lda #%00011110	; Enable Sprites
+	sta PPU_MASK
+
+reset_scroll:
+    LDA #$00
+    STA PPU_SCROLL   ; set x-scroll to 0
+    STA PPU_SCROLL   ; set y-scroll to 0
+
 
     ; FOREVER LOOP
     forever:
@@ -200,7 +194,7 @@ end:                               ; END of MAIN
     STA PPU_ADDR                ; first address write
     LDA #<NAMETABLE_0           ; low byte of the nametable
     STA PPU_ADDR                ; second address write
-    LDA #$00                    ; tile 0 = empty tile
+    LDA #EMPTY_TILE             ; tile 0 = empty tile
     LDX #$04                    ; 4 pages of 256 bytes = 1024 bytes (tiles and attributes)
     LDY #$00                    ; Y = byte counter inside a page
 clearLoop:

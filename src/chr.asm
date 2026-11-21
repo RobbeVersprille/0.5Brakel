@@ -73,6 +73,28 @@ PaletteData:
     .byte $1C,$3A,$79,$F5,$CB,$96,$FE,$7C,$1C,$26,$47,$8F,$BF,$FE,$FE,$7C ; Logs
     .byte $0C,$5E,$3B,$5F,$A6,$84,$48,$30,$0C,$52,$35,$79,$FE,$FC,$78,$30 ; Stone
     .byte $FF,$7E,$42,$81,$81,$66,$18,$7E,$81,$42,$7E,$FF,$FF,$7E,$18,$7E ; DUVEL
+    
+    .byte $18,$18,$4E,$39,$08,$14,$14,$12,$00,$00,$77,$77,$00,$00,$00,$36   ; worker tile
+
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$3f,$3f,$38,$30,$30,$30   ; top-left corner HUD
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$fc,$fc,$1c,$0c,$0c,$0c   ; top-right corner HUD
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$30,$30,$30,$38,$3f,$3f,$00,$00   ; bottom-left corner HUD
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$0c,$0c,$0c,$1c,$fc,$fc,$00,$00   ; bottom-right corner HUD
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$00,$ff,$ff,$00,$00,$00   ; horizontal edge HUD
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$18,$18,$18,$18,$18,$18,$18,$18   ; vertical edge HUD
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00   ; empty tile HUD
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$22,$22,$04,$08,$08,$00,$08   ; placeholder tile HUD
+
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$63,$63,$63,$63,$3E,$1C   ; 0
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$0C,$1C,$3C,$2C,$0C,$0C,$0C,$0C   ; 1
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$66,$66,$0C,$18,$3E,$3E   ; 2
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$26,$0C,$0C,$26,$3E,$1C   ; 3
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$60,$C0,$D8,$FE,$FE,$18,$18,$18   ; 4
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3E,$3E,$30,$3C,$06,$06,$3E,$3C   ; 5
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3C,$62,$60,$7C,$66,$66,$7C,$38   ; 6
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3E,$7E,$46,$0C,$0C,$18,$18,$18   ; 7
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$7C,$C6,$C6,$7C,$C6,$C6,$FE,$38   ; 8
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$66,$66,$3E,$06,$46,$3C   ; 9
 .endmacro                             ; expanded once in CHR0 and once in CHR1
 
 .segment "CHR0"                       ; pattern table 0 = frame A
@@ -84,7 +106,6 @@ PaletteData:
 .byte $FF,$33,$66,$CC,$CC,$66,$33,$FF,$FF,$CC,$99,$33,$33,$99,$CC,$FF ; tile $03 left  A <
 .byte $99,$BD,$E7,$C3,$99,$BD,$E7,$C3,$E7,$C3,$99,$BD,$E7,$C3,$99,$BD ; tile $04 up    A ^
 
-
 StaticTiles                           ; Expand StaticTiles macro here for CHR0
 
 .segment "CHR1"                       ; pattern table 1 = frame B
@@ -95,7 +116,5 @@ StaticTiles                           ; Expand StaticTiles macro here for CHR0
 .byte $99,$C3,$E7,$BD,$99,$C3,$E7,$BD,$E7,$BD,$99,$C3,$E7,$BD,$99,$C3 ; tile $02 down  B v
 .byte $FF,$66,$CC,$99,$99,$CC,$66,$FF,$FF,$99,$33,$66,$66,$33,$99,$FF ; tile $03 left  B <
 .byte $BD,$E7,$C3,$99,$BD,$E7,$C3,$99,$C3,$99,$BD,$E7,$C3,$99,$BD,$E7 ; tile $04 up    B ^
-
-.byte $E7,$81,$81,$00,$00,$81,$81,$E7,$00,$00,$00,$00,$00,$00,$00,$00 ; Cursor sprite -> Could be in StaticTiles, but Thibe expects it to be the 5th tile in the pattern table, so we keep it here.
 
 StaticTiles                           ; Expand StaticTiles macro here for CHR1
