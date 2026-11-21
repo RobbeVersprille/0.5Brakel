@@ -35,6 +35,8 @@
 ; Sprite limits: the hardware allows 64 sprites and 8 per scanline, so a long row of items will start to drop sprites.
 ; ----------------------------------------------------------------------
 
+.include "constants.asm"
+
 .setcpu "6502"                        ; target CPU of this file
 
 .import PaletteData                   ; palette bytes from chr.asm
@@ -48,18 +50,13 @@
 
 ; Conveyor directions (value of 'conveyor_dir')
 CONVEYOR_DIR_MASK = %00000011         ; 4 directions: 0..3
-CONVEYOR_FIRST_TILE = $01             ; tile index of the right conveyor, + conveyor_dir for the others
+CONVEYOR_FIRST_TILE = CONVEYER_RIGHT  ; tile index of the right conveyor, + conveyor_dir for the others
 
 ; Animation
 CONVEYOR_STEP_FRAMES = 9              ; video frames per animation step (belt speed = 1 px per step)
 CONVEYOR_STEP_MASK = %00000011        ; 4 animation steps: 0..3
 CONVEYOR_PALETTE_HIGH = $3F           ; high byte of $3F05 (background palette 1, colour 1)
 CONVEYOR_PALETTE_LOW = $05            ; low byte of $3F05; colour 2 is the next byte, $3F06
-
-; PPU registers
-PPU_STATUS = $2002                    ; reading it resets the address latch
-PPU_ADDR = $2006                      ; VRAM address, written high byte first
-PPU_DATA = $2007                      ; VRAM data
 
 ; Items (sprites that ride on the conveyors)
 MAX_ITEMS = 16                        ; item slots (hardware: 64 sprites, 8 per scanline)

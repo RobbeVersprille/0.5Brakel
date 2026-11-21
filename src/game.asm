@@ -17,7 +17,6 @@
 ; Macros
 JOYPAD1 =  $4016; 
 START_ADDRESS_CURSOR_OAM = $00;
-CURSOR_TILE = $05;
 CURSOR_PALETTE = $01;
 
 .segment "HEADER" ; Header is meestal 16 bytes        
@@ -195,7 +194,7 @@ end:                               ; END of MAIN
     STA PPU_ADDR                ; first address write
     LDA #<NAMETABLE_0           ; low byte of the nametable
     STA PPU_ADDR                ; second address write
-    LDA #$00                    ; tile 0 = empty tile
+    LDA #EMPTY_TILE             ; tile 0 = empty tile
     LDX #$04                    ; 4 pages of 256 bytes = 1024 bytes (tiles and attributes)
     LDY #$00                    ; Y = byte counter inside a page
 clearLoop:
