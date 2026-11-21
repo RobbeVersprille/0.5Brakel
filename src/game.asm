@@ -127,6 +127,16 @@ clearOam:
     JSR InitConveyor            ; conveyor animation and items start from step 0
     JSR InitHud
 
+    ;; code from the book
+    lda #1
+    ldx #0
+    ldy #0
+    jsr famistudio_init
+    ldx #.lobyte(sounds)
+    ldy #.hibyte(sounds)
+    jsr famistudio_sfx_init
+    ;;
+
 wait_vblank:                       ; Wait for the PPU to start
     BIT PPU_STATUS        ; Reads the PPU-status; bit 7 = VBlank on/off
     BPL wait_vblank ; Loop util bit 7 = nul (negative bit)
@@ -308,18 +318,6 @@ attributeLoop:
     LDA flags        ; Load flags
     EOR #PAUSED_FLAG ; Flip (Paused flag)
     STA flags        ; Save new state
-    
-    AND #PAUSED_FLAG    ; test the flag we just stored
-    BNE now_paused
-
-    LDA #1              ; now unpaused -> SFX 1
-    JSR play_sfx
-    JMP end
-
-now_paused:
-    LDA #0              ; now paused -> SFX 0
-    JSR play_sfx
-
     
     AND #PAUSED_FLAG    ; test the flag we just stored
     BNE now_paused
