@@ -11,6 +11,7 @@
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
 .import ShowHud, InitHud
+.import InitMoney
 
 .setcpu "6502"
 
@@ -97,6 +98,7 @@ clearOam:
     JSR InitCursor
     JSR InitConveyor            ; conveyor animation and items start from step 0
     JSR InitHud
+    JSR InitMoney
 
 wait_vblank:                       ; Wait for the PPU to start
     BIT PPU_STATUS        ; Reads the PPU-status; bit 7 = VBlank on/off
