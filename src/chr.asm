@@ -6,11 +6,16 @@
 .export PaletteData                   ; make visible to other files
 
 ; Colours and the animated sub-palette
-COL_BACKDROP = $1A                    ; shared backdrop colour
+COL_BACKDROP = $1A                         ; shared backdrop colour
 
 CONVEYOR_DARK     = $00                    ; dark grey
 CONVEYOR_LIGHT    = $10                    ; light grey
 CONVEYOR_BLACK    = $0F                    ; black
+
+;TODO RENAME THESE VARIABLES
+CURSOR_COLOR2     = $30
+CURSOR_COLOR3     = $28
+CURSOR_COLOR4     = $10
 
 .segment "CODE"                       ; palette lives in PRG-ROM
 
@@ -22,9 +27,17 @@ CONVEYOR_BLACK    = $0F                    ; black
 ; so nothing else may use palette 1.
 
 PaletteData:
-        .byte COL_BACKDROP, COL_BACKDROP, COL_BACKDROP, COL_BACKDROP ; default
-        .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK ; conveyors
-        .byte COL_BACKDROP, $11, $21, $01 ; blueprint
+    ;Backdrop pallets
+    .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
+    .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
+    .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
+    .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
+    ;Sprite pallets
+    .byte COL_BACKDROP, CURSOR_COLOR2, CURSOR_COLOR3, CURSOR_COLOR4
+    .byte COL_BACKDROP, CURSOR_COLOR2, CURSOR_COLOR3, CURSOR_COLOR4
+    .byte COL_BACKDROP, CURSOR_COLOR2, CURSOR_COLOR3, CURSOR_COLOR4
+    .byte COL_BACKDROP, CURSOR_COLOR2, CURSOR_COLOR3, CURSOR_COLOR4
+    
 
 ; ====================================================
 ; CHR-ROM: 8 KB = two pattern tables of 4 KB
@@ -70,7 +83,9 @@ PaletteData:
 .byte $FF,$33,$66,$CC,$CC,$66,$33,$FF,$FF,$CC,$99,$33,$33,$99,$CC,$FF ; tile $03 left  A <
 .byte $99,$BD,$E7,$C3,$99,$BD,$E7,$C3,$E7,$C3,$99,$BD,$E7,$C3,$99,$BD ; tile $04 up    A ^
 
-StaticTiles                           ; tile $05 and up
+.byte $E7,$81,$81,$00,$00,$81,$81,$E7,$00,$00,$00,$00,$00,$00,$00,$00 ; Cursor sprite -> Could be in StaticTiles, but Thibe expects it to be the 5th tile in the pattern table, so we keep it here.
+
+StaticTiles                           ; Expand StaticTiles macro here for CHR0
 
 .segment "CHR1"                       ; pattern table 1 = frame B
 
@@ -81,4 +96,6 @@ StaticTiles                           ; tile $05 and up
 .byte $FF,$66,$CC,$99,$99,$CC,$66,$FF,$FF,$99,$33,$66,$66,$33,$99,$FF ; tile $03 left  B <
 .byte $BD,$E7,$C3,$99,$BD,$E7,$C3,$99,$C3,$99,$BD,$E7,$C3,$99,$BD,$E7 ; tile $04 up    B ^
 
-StaticTiles                           ; tile $05 and up, identical to CHR0
+.byte $E7,$81,$81,$00,$00,$81,$81,$E7,$00,$00,$00,$00,$00,$00,$00,$00 ; Cursor sprite -> Could be in StaticTiles, but Thibe expects it to be the 5th tile in the pattern table, so we keep it here.
+
+StaticTiles                           ; Expand StaticTiles macro here for CHR1
