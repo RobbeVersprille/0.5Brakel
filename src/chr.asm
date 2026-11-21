@@ -64,6 +64,7 @@ PaletteData:
 
 .macro StaticTiles                    ; tiles that never animate 
     ; add every non-animated tile here (grass, font, UI, buildings)
+    .byte $E7,$81,$81,$00,$00,$81,$81,$E7,$00,$00,$00,$00,$00,$00,$00,$00 ; Cursor sprite
     .byte $1C,$2A,$65,$93,$C7,$AE,$5C,$38,$1C,$36,$5B,$EF,$BF,$DE,$7C,$38 ; Bread
     .byte $08,$1C,$1A,$3E,$56,$E3,$85,$20,$00,$00,$04,$00,$28,$1C,$7A,$DF ; Coin
     .byte $00,$3C,$66,$66,$66,$66,$3C,$00,$3C,$42,$99,$99,$99,$99,$42,$3C ; Sand
@@ -83,7 +84,6 @@ PaletteData:
 .byte $FF,$33,$66,$CC,$CC,$66,$33,$FF,$FF,$CC,$99,$33,$33,$99,$CC,$FF ; tile $03 left  A <
 .byte $99,$BD,$E7,$C3,$99,$BD,$E7,$C3,$E7,$C3,$99,$BD,$E7,$C3,$99,$BD ; tile $04 up    A ^
 
-.byte $E7,$81,$81,$00,$00,$81,$81,$E7,$00,$00,$00,$00,$00,$00,$00,$00 ; Cursor sprite -> Could be in StaticTiles, but Thibe expects it to be the 5th tile in the pattern table, so we keep it here.
 
 StaticTiles                           ; Expand StaticTiles macro here for CHR0
 
