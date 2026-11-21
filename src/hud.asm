@@ -23,8 +23,6 @@
 .export ShowHud, InitHud
 .export SelectableItemTable
 
-.import FillDecimalSegments
-
 ;; ========================================================
 ;;  LOCAL HUD CONSTANTS
 ;; ========================================================
@@ -165,7 +163,7 @@ drawMiddleLine:
     STA PPU_DATA         ; store vertical edge tile in nametable
 
     ;; draw empty tiles over span of the hud
-    LDA #EMPTY_TILE      ; load index of empty tile
+    LDA #EMPTY_HUD_TILE      ; load index of empty tile
     LDX #HUD_WIDTH - 2   ; load amount of times this tile needs to be drawn
     JSR DrawLine        ; draw empty tile x times
 
@@ -398,11 +396,14 @@ ItemTable:
 ;; start of all items that can be selected in the menu
 SELECTABLE_ITEM_AMOUNT = ItemTableEnd - SelectableItemTable
 SelectableItemTable:
+    .byte ((3 << 5) | 14), PLACEHOLDER_TILE, $FF
     .byte ((3 << 5) | 16), PLACEHOLDER_TILE, $FF
     .byte ((3 << 5) | 18), PLACEHOLDER_TILE, $FF
     .byte ((3 << 5) | 20), PLACEHOLDER_TILE, $FF
     .byte ((3 << 5) | 22), PLACEHOLDER_TILE, $FF
     .byte ((3 << 5) | 24), PLACEHOLDER_TILE, $FF
+    .byte ((3 << 5) | 26), PLACEHOLDER_TILE, $FF
+    .byte ((3 << 5) | 28), PLACEHOLDER_TILE, $FF
 
     .byte ((5 << 5) | 30), PLACEHOLDER_TILE, $FF    ; reserved for money debug item
 ItemTableEnd:
