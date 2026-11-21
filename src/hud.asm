@@ -1,9 +1,15 @@
-; -----------------------------------------------
+; ---------------------------------------------------------
 ; Showing and Controlling the hud
-; -----------------------------------------------
+; ---------------------------------------------------------
 
-;; ================ EXPORTS =====================
+;; ================ EXPORTS ===============================
 
+;;  ----------- VARIABLES -----------------------
+;; money:       (TESTING VARIABLE, DONT USE!!!)
+;; villagers:   (TESTING VARIABLE, DONT USE!!!)
+;; food:        (TESTING VARIABLE, DONT USE!!!)
+
+;; --------------- FUNCTIONS --------------------
 ;; InitHud
 ;; Initialises hud variables in ram
 ;; registers used: A
@@ -12,12 +18,17 @@
 ;; Draws the hud at the bottom of the screen
 ;; registers used: A, X, Y
 
-;; ==============================================
+;; ---------------- TABLES ----------------------
+;; SelectableItemTable: contains all HUD items that are selectable by the cursor (related: SELECTABLE_ITEM_AMOUNT)
+
+;; ========================================================
 
 .include "constants.asm"
 
-.export money
+.export money, food, villagers
 .export ShowHud
+.export SelectableItemTable
+
 .import FillDecimalSegments
 
 ;; ========================================================
@@ -38,12 +49,13 @@ HUD_POS_NAMETABLE = VRAM_NAMETABLE_0 + HUD_OFFSET
 HUD_POS_ATTRTABLE = $23C0 | (HUD_OFFSET & $0C00) | ((HUD_OFFSET >> 4) & $38) | ((HUD_OFFSET >> 2) & $07)
 
 HUD_ATTRIBUTE_WIDTH = HUD_WIDTH / ATTRSIZE
-HUD_ATTRIBUTE_HEIGHT = (HUD_HEIGHT / ATTRSIZE) + 1  ; +1 because the division needs to be ceiled
+HUD_ATTRIBUTE_HEIGHT = (HUD_HEIGHT / ATTRSIZE) + 2
 
 ;; ========================================================
 ;;  HUD TILE CONSTANTS
 ;; ========================================================
 
+;; border tiles
 TOP_LEFT_CORNER     = $0A
 TOP_RIGHT_CORNER    = $0B
 BOTTOM_LEFT_CORNER  = $0C
@@ -52,12 +64,56 @@ HORIZONTAL_EDGE     = $0E
 VERTICAL_EDGE       = $0F
 EMPTY_TILE          = $10
 
+;; item tiles
 PLACEHOLDER_TILE    = $11
 
+;; number tiles
 NUMBER_TILE         = $12
 
+;; ========================================================
+;;  MACROS
+;; ========================================================
+
+;; fills the variables segments_size and segments_copy that are used when displaying a number in segments
+;; @param size: amount of bytes to display
+;; @param location: location of the bytes
+.macro SetupSegmentsDisplay size, location
+    .assert size > 0, error, "Size must be greater than 0"
+
+    ;; setup segments_copy and segments_size variables
+    LDA #size           ; load amount of money segemtents bytes in A
+    STA segments_size   ; store amount of bytes in segments_size
+
+    ;; fill segments copy in reverse order
+    TAX ; transfer amount of bytes in A to X (use as index)
+    DEX ; decrement because value is final index + 1
+
+@loop:
+    LDA location, X         ; load byte at index X in money variable
+    STA segments_copy, X    ; store byte at index X in segments copy
+
+    DEX         ; decrement index
+    BPL @loop   ; while X >= 0, keep looping
+.endmacro
+
+;; ========================================================
+;;  CODE/DATA
+;; ========================================================
+
 .segment "BSS"
-    money: .res 5   ; reseve 5 bytes to be able to display up to 9 billion in display mode
+    ;; todo remove money, villagers, food as these are placeholder variables for testing
+    MONEY_SIZE = 5
+    money:      .res MONEY_SIZE     ; reseve 5 bytes to be able to display up to 9 billion in display mode
+
+    VILLAGERS_SIZE = 1
+    villagers:  .res VILLAGERS_SIZE ; reserve 1 byte for the amount of villagers
+
+    FOOD_SIZE = 1
+    food:       .res FOOD_SIZE      ; reserve 1 byte for the amount of food
+
+    MAX_SEGMENTS_SIZE = 5                   ; max amount of segments bytes
+    segments_copy: .res MAX_SEGMENTS_SIZE   ; copy of segments to display
+    segments_size: .res 1                   ; amount of segments to display
 .segment "CODE"
 
 .proc ShowHud
@@ -199,25 +255,44 @@ storeItemTile:
     INX ; increment index to get type of the item
 
 handleItemType:
-    LDA ItemTable, X    ; load item type into A
-    CMP #$FF            ; compare item type to invalid type
-    BEQ skipItemType    ; skip item type if its equal to invalid type
-
-checkMoneyType:
-    CMP #$00            ; compare item type to money type
-    BNE skipItemType    ; skip item type if its not equal
-
     ;; push item index onto the stack
     TXA
     PHA
 
-    JSR DrawSegments    ; draw money segments
+    LDA ItemTable, X    ; load item type into A
+    CMP #$FF            ; compare item type to invalid type
+    BEQ endItemChecks   ; skip item type if its equal to invalid type
 
+checkVillagerType:
+    CMP #$00            ; compare item type to villager type
+    BNE checkFoodType   ; go to next item type if its not equal
+
+    SetupSegmentsDisplay VILLAGERS_SIZE, villagers  ; fills variables segments_size and segments_copy with values in arguments
+    JSR DrawSegments                                ; draw villagers segments
+
+    JMP endItemChecks   ; jump to the end and pop item index from stack
+
+checkFoodType:
+    CMP #$01            ; compare item type to food type
+    BNE checkMoneyType  ; go to next item check if its not equal
+
+    SetupSegmentsDisplay FOOD_SIZE, food    ; fill variables segments_size and segments_copy with values in arguments
+    JSR DrawSegments                        ; draw food segments
+
+    JMP endItemChecks   ; jump to end and pop item index from stack
+
+checkMoneyType:
+    CMP #$02            ; compare item type to money type
+    BNE endItemChecks   ; got to the end of the checks if its not equal
+
+    SetupSegmentsDisplay MONEY_SIZE, money  ; fill variables segments_size and segments_copy with values in arguments
+    JSR DrawSegments                        ; draw money segments
+
+endItemChecks:
     ;; pop item index from stack
     PLA
     TAX
 
-skipItemType:
     INX                     ; increment index int item table
     CPX #ITEM_TABLE_SIZE    ; check if item index is at end
     BNE loop                ; if there are still items that need to be processed, continue
@@ -227,15 +302,16 @@ end:
 
 .endproc
 
-;; Draws a number to PPUDATA 
-;; @param A: number to draw
+;; Draws a number to PPUDATA
+;; @param segments_copy: copy data of segments bytes
+;; @param segments_size: amount of segments bytes
 .proc DrawSegments
     LDX #$FF        ; byte index (FF since loop starts by incrementing X)
 
     ;; check when the drawing needs to start (first nonzero segment)
 findFirstSegment:
     INX                     ; increment current byte index (at start of loop, this value becomes 0)
-    CPX #$05                ; check if current byte index is less than total amount of bytes to check
+    CPX segments_size       ; check if current byte index is less than total amount of bytes to check
     BNE checkByteSegments   ; if byte index is not the total amount of bytes, check if byte has nonzero segments
 
     ;; since entire value is 0, only draw 1 tile with zero
@@ -244,8 +320,8 @@ findFirstSegment:
     RTS ; return since the byte index is not valid anymore
 
 checkByteSegments:
-    LDA money, X    ; load first 2 segments into A
-    TAY             ; save segments byte in Y since the AND operations will modify A
+    LDA segments_copy, X    ; load first 2 segments into A
+    TAY                     ; save segments byte in Y since the AND operations will modify A
 
     AND #$F0        ; check if first segment is 0
     BNE drawLoop    ; if segment is non zero, start drawing
@@ -263,14 +339,14 @@ drawUnalignedSegment:
     STA PPUDATA     ; store number tile into nametable
     
     INX                 ; increment current byte index
-    CPX #$05            ; check if current byte index is still less than amount of bytes to check
+    CPX segments_size   ; check if current byte index is still less than amount of bytes to check
     BNE drawLoop ; draw segment byte if byte index is still valid
 
     RTS ; return since byte index isnt valid anymore
 
     ;; start drawing at current byte index, (this should be correct because the previous loop only increments X at start)
 drawLoop:
-    LDA money, X    ; load segments of current byte into A
+    LDA segments_copy, X    ; load segments of current byte into A
     TAY ; save segments byte into y
     
     ;; shift high nibble to low nibble
@@ -290,8 +366,8 @@ drawLoop:
     ADC #NUMBER_TILE ; add index of number tile into nametable
     STA PPUDATA     ; store number tile into nametable
     
-    INX             ; increment current byte index
-    CPX #$05        ; check if current byte index is still less than amount of bytes to check
+    INX                 ; increment current byte index
+    CPX segments_size   ; check if current byte index is still less than amount of bytes to check
     BNE drawLoop    ; draw segment byte if byte index is still valid
 
     RTS
@@ -310,20 +386,17 @@ ITEM_TABLE_SIZE = ItemTableEnd - ItemTable
 ITEM_TABLE_WIDTH = 3
 ItemTable:
     .byte ((1 << 5) | 1), PLACEHOLDER_TILE, $00  ; villager amount
-    .byte ((3 << 5) | 1), PLACEHOLDER_TILE, $00  ; food amount
-    .byte ((5 << 5) | 1), PLACEHOLDER_TILE, $00  ; coin amount
+    .byte ((3 << 5) | 1), PLACEHOLDER_TILE, $01  ; food amount
+    .byte ((5 << 5) | 1), PLACEHOLDER_TILE, $02  ; coin amount
 
 ;; start of all items that can be selected in the menu
-SELECTABLE_ITEMS = ItemTableEnd - ItemTable
+SELECTABLE_ITEM_AMOUNT = ItemTableEnd - SelectableItemTable
 SelectableItemTable:
     .byte ((3 << 5) | 16), PLACEHOLDER_TILE, $FF
     .byte ((3 << 5) | 18), PLACEHOLDER_TILE, $FF
     .byte ((3 << 5) | 20), PLACEHOLDER_TILE, $FF
     .byte ((3 << 5) | 22), PLACEHOLDER_TILE, $FF
     .byte ((3 << 5) | 24), PLACEHOLDER_TILE, $FF
-ItemTableEnd:
 
-;; contains the functions called when drawing the a Item
-TYPE_FUNCTION_TABLE_SIZE = (TypeFunctionTableEnd - TypeFunctionTable) / 2
-TypeFunctionTable:
-TypeFunctionTableEnd:
+    .byte ((5 << 5) | 30), PLACEHOLDER_TILE, $FF    ; reserved for money debug item
+ItemTableEnd:
