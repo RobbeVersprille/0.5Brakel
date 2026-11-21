@@ -2,8 +2,9 @@
 .import InitConveyor
 .import ConveyorTick
 .import ConveyorUpload
-.import PlaceConveyor                 ; write one conveyor tile (PPU address in A / X)
-.import RotateConveyor                ; turn the direction that PlaceConveyor uses
+.import PlaceConveyor                 ; write one conveyor tile (PPU address in A / X)      ONLY USE IN NMI
+.import RotateConveyor                ; turn the direction that PlaceConveyor uses          ONLY USE IN NMI
+.import RemoveConveyor                ; remove one conveyor tile (PPU address in A / X)     ONLY USE IN NMI
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
