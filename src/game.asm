@@ -1,10 +1,10 @@
-; Besturing:
-;   A-knop       = rode achtergrond, zwart punt
-;   B-knop       = blauwe achtergrond, wit punt
-;   Pijl omhoog  = punt omhoog bewegen
-;   Pijl omlaag  = punt omlaag bewegen
-;   Pijl links   = punt naar links bewegen
-;   Pijl rechts  = punt naar rechts bewegen
+; Tom's Favourite NES Game
+.import InitConveyor
+.import ConveyorTick
+.import ConveyorUpload
+.import PlaceConveyor                 ; write one conveyor tile (PPU address in A / X)      ONLY USE IN NMI
+.import RotateConveyor                ; turn the direction that PlaceConveyor uses
+.import RemoveConveyor                ; remove one conveyor tile (PPU address in A / X)     ONLY USE IN NMI
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
@@ -14,13 +14,26 @@
 ; Macros
 JOYPAD1 =  $4016; 
 START_ADDRESS_CURSOR_OAM = $00;
-CURSOR_TILE = $09
-CURSOR_PALETTE = $01
+CURSOR_TILE = $05;
+CURSOR_PALETTE = $01;
 
 SCREEN_WIDTH  = $20 ; TODO merge with viktor
 SCREEN_HEIGHT = $1E ; TODO merge with viktor
 HUD_HEIGHT    = $05 ; TODO merge with viktor
 
+; PPU registers
+PPU_CTRL = $2000                      ; NMI enable, pattern tables, nametable select
+PPU_MASK = $2001                      ; show / hide background and sprites
+PPU_STATUS = $2002                    ; VBlank flag, reading it resets the address latch
+PPU_SCROLL = $2005                    ; scroll position, written twice (x then y)
+PPU_ADDR = $2006                      ; VRAM address, written twice (high then low)
+PPU_DATA = $2007                      ; VRAM data
+
+; Nametable
+NAMETABLE_0 = $2000                   ; first tile of nametable 0
+ATTRIBUTE_0 = $23C0                   ; first attribute byte of nametable 0
+PALETTE_1_ALL = %01010101             ; attribute byte: all four 16x16 blocks use background palette 1
+PALETTE_BYTES = 12                    ; size of PaletteData in chr.asm (3 palettes of 4 colours)
 
 .segment "HEADER" ; Header is meestal 16 bytes        
     .byte "NES", $1A           ; Herkenningsbytes voor een NES-ROM
@@ -45,7 +58,8 @@ HUD_HEIGHT    = $05 ; TODO merge with viktor
         DOWN_BUTTON   = %00000100    ; bit 5 = Down 
         LEFT_BUTTON   = %00000010    ; bit 6 = Left
         RIGHT_BUTTON  = %00000001    ; bit 7 = Right    
- 
+    nmi_flag:    .res 1        ; set by the NMI, cleared by the main loop 
+
     selected_building_mode: .res 1   ; Keeps track of the selected "building" (factory, depo, area, belt,....) 
         DEPOSIT_STATE     = $00      ; bit 0 = Deposit
         CONVEYER_STATE    = $01      ; bit 1 = Conveyer
@@ -77,9 +91,16 @@ reset:                             ; Reset label
     TXS             ; Initialize stack pointer
 
     INX             ; X = 0 (FF + 1 = 0 )
-    STX $2000       ; Disable NMI
-    STX $2001       ; Disable rendering
+    STX PPU_CTRL    ; Disable NMI
+    STX PPU_MASK    ; Disable rendering
     STX $4010       ; Disable DMC IRQ
+
+    LDA #$FF                    ; Y = $FF hides a sprite
+    LDX #$00                    ; X = byte index in the OAM shadow page
+clearOam:
+    STA $0200,X                 ; hide this byte of the shadow OAM
+    INX                         ; next byte
+    BNE clearOam                ; until all 256 bytes are done
 
     ; Initialize variables state
     LDA #$00        
@@ -90,21 +111,25 @@ reset:                             ; Reset label
 
     JSR InitOamData
     JSR InitCursor
+    JSR InitConveyor            ; conveyor animation and items start from step 0
 
 wait_vblank:                       ; Wait for the PPU to start
-    BIT $2002       ; Reads the PPU-status; bit 7 = VBlank on/off
+    BIT PPU_STATUS        ; Reads the PPU-status; bit 7 = VBlank on/off
     BPL wait_vblank ; Loop util bit 7 = nul (negative bit)
 
 vblank2:                           ; second vblank wait so the PPU is fully warmed up
-    BIT $2002
+    BIT PPU_STATUS
     BPL vblank2
+    STA nmi_flag                ; no NMI has happened yet
+
+    ; Rendering is still off, so the PPU may be written at any time
     JSR LoadPalette                ; Loading the pallet data into memory
+    JSR ClearNametable          ; empty tiles + attribute table
 
     LDA #%10000000
-    STA $2000               ; enable NMI
+    STA PPU_CTRL               ; enable NMI
     LDA #%00011110
-    STA $2001               ; enable background rendering and sprite
-
+    STA PPU_MASK               ; enable background rendering and sprite
 
     ; FOREVER LOOP
     forever:
@@ -116,6 +141,13 @@ vblank2:                           ; second vblank wait so the PPU is fully warm
 
 
 .proc Main                         ; MAIN LOOP OF THE GAME
+waitNmi:
+    LDA nmi_flag                ; did the NMI run since the last frame?
+    BEQ waitNmi                 ; no: wait
+    LDA #$00                    ; yes: clear the flag
+    STA nmi_flag                ; for the next frame
+    JSR ConveyorTick            ; once per frame
+
     JSR ReadController             ; Read controller input
     JSR HandlePaused               ; Handles/Updates the paused state of the game
 
@@ -140,25 +172,57 @@ end:                               ; END of MAIN
     RTS
 .endproc
 
-.proc LoadPalette                  ; Loading pallet data into memory
-    BIT $2002               ; reset the $2006 latch
-    LDA #$3F
-    STA $2006
-    LDA #$00
-    STA $2006               ; PPU address = $3F00
-    LDX #$00
+.proc LoadPalette               ; Loading pallet data into memory
+    BIT PPU_STATUS              ; reset the PPU address latch
+    LDA #$3F                    ; high byte of the palette address
+    STA PPU_ADDR                ; first address write
+    LDA #$00                    ; low byte of the palette address
+    STA PPU_ADDR                ; second address write
+    LDX #$00                    ; X = palette byte index
 @loop:
     LDA PaletteData, X
-    STA $2007
+    STA PPU_DATA
     INX
     CPX #32                 ; 4 bg palettes + 4 sprite palettes
     BNE @loop
 
     LDA #$00                ; writing $2006 disturbs the scroll, so reset it
-    STA $2005
-    STA $2005
+    STA PPU_SCROLL
+    STA PPU_SCROLL
     RTS
 .endproc
+
+; ClearNametable: tile 0 everywhere, then every attribute byte = palette 1.
+; Tile 0 only uses colour 0 (the backdrop), so the palette does not matter for it.
+.proc ClearNametable
+    BIT PPU_STATUS              ; reset the PPU address latch
+    LDA #>NAMETABLE_0           ; high byte of the nametable
+    STA PPU_ADDR                ; first address write
+    LDA #<NAMETABLE_0           ; low byte of the nametable
+    STA PPU_ADDR                ; second address write
+    LDA #$00                    ; tile 0 = empty tile
+    LDX #$04                    ; 4 pages of 256 bytes = 1024 bytes (tiles and attributes)
+    LDY #$00                    ; Y = byte counter inside a page
+clearLoop:
+    STA PPU_DATA                ; write one tile
+    INY                         ; next byte
+    BNE clearLoop               ; until the page is done
+    DEX                         ; next page
+    BNE clearLoop               ; until all pages are done
+
+    LDA #>ATTRIBUTE_0           ; high byte of the attribute table
+    STA PPU_ADDR                ; first address write
+    LDA #<ATTRIBUTE_0           ; low byte of the attribute table
+    STA PPU_ADDR                ; second address write
+    LDA #PALETTE_1_ALL          ; every 16x16 block uses palette 1 (the conveyor palette)
+    LDX #$40                    ; 64 attribute bytes
+attributeLoop:
+    STA PPU_DATA                ; write one attribute byte
+    DEX                         ; next byte
+    BNE attributeLoop           ; until all are done
+    RTS                         ; return to caller
+.endproc
+
 
 .proc InitCursor                   ; Init the cursor attribute and pallet in the OAM_copy and sets its location to the center of the screen
     ; start in the center of the tile grid
@@ -173,13 +237,13 @@ end:                               ; END of MAIN
     STA oam_copy, X              ; byte 1: tile index
     INX
     LDA #CURSOR_PALETTE
-    STA oam_copy, X            ; byte 2: attributes
+    STA oam_copy, X              ; byte 2: attributes
 
     JSR UpdateCursor             ; fills in Y (byte 0) and X (byte 3)
     RTS
 .endproc
 
-.proc UpdateCursor                 ; Updates the cursor x an y pos in the oam copy for its position on the grid
+.proc UpdateCursor               ; Updates the cursor x an y pos in the oam copy for its position on the grid
     LDX #START_ADDRESS_CURSOR_OAM
     LDA cursor_y ; y index of cursor location
     ASL  ; multiply by 2
@@ -201,18 +265,18 @@ end:                               ; END of MAIN
     RTS
 .endproc
 .proc UpdateCursorInHud            ; Updates the cursor x an y pos in the oam copy for its position on in the HUD
-
+    RTS
 .endproc
 .proc HandlePaused                 ; Handles/Updates the paused state of the game
     LDA buttons         ; Load button input
-    AND #START_BUTTON  ; Isolate bit 4, START-Button
-    BEQ end         ; If START not pressed, end
+    AND #START_BUTTON   ; Isolate bit 4, START-Button
+    BEQ end             ; If START not pressed, end
 
     ; START-BUTTON CODE HOLD PRESS:
 
     LDA old_buttons     ; Load old button input
     AND #START_BUTTON   ; Isolate bit 4, START-Button
-    BNE end         ; If START was pressed, end
+    BNE end             ; If START was pressed, end
 
     ; START-BUTTON CODE NEW PRESS:
 
@@ -451,10 +515,28 @@ inputDone:                         ; END of input checks
 
 ; INTERRUPTROUTINES
 nmi:                               ; NMI INTERUPT
-    PHA                            ; push A to stack
+    PHA                         ; save A
+    TXA                         ; save X
+    PHA                         ; ...
+    TYA                         ; save Y
+    PHA                         ; ...
+
     JSR TransferOamData            ; Transfer the OAM_Copy to the PPU
 
-    PLA                            ; Pull A from stack
+    JSR ConveyorUpload          ; palette writes, returns PPUCTRL bit 4 in A
+    ORA #%10000000              ; PPUCTRL bit 7: keep NMI enabled (OR in your other PPUCTRL bits)
+    STA PPU_CTRL                ; must come after the palette writes
+    LDA #$00                    ; scroll 0, 0
+    STA PPU_SCROLL              ; x scroll
+    STA PPU_SCROLL              ; y scroll
+    LDA #$01                    ; tell the main loop that a new frame started
+    STA nmi_flag                ; ...
+
+    PLA                         ; restore Y
+    TAY                         ; ...
+    PLA                         ; restore X
+    TAX                         ; ...
+    PLA                         ; restore A
     RTI                            ; Return from NMI-interrupt
 
 irq:                               ; IRA INTERUPT
