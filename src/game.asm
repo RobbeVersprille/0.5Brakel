@@ -129,14 +129,13 @@ clearOam:
     JSR InitHud
 
     ;; code from the book
-    lda #1
-    ldx #.lobyte(music_data_untitled)
-    ldy #.hibyte(music_data_untitled)
-    jsr famistudio_init
-    ldx #.lobyte(sounds)
-    ldy #.hibyte(sounds)
-    jsr famistudio_sfx_init
-
+    LDA #1
+    LDX #.lobyte(music_data_untitled)
+    LDY #.hibyte(music_data_untitled)
+    JSR famistudio_init
+    LDX #.lobyte(sounds)
+    LDY #.hibyte(sounds)
+    JSR famistudio_sfx_init
     ;;
 
 wait_vblank:                       ; Wait for the PPU to start
@@ -155,10 +154,10 @@ vblank2:                           ; second vblank wait so the PPU is fully warm
     JSR ShowHud
 
 enable_rendering:
-	lda #%10000000	; Enable NMI
-	sta PPU_CTRL
-	lda #%00011110	; Enable Sprites
-	sta PPU_MASK
+	LDA #%10000000	; Enable NMI
+	STA PPU_CTRL
+	LDA #%00011110	; Enable Sprites
+	STA PPU_MASK
 
 reset_scroll:
     LDA #$00
@@ -166,17 +165,14 @@ reset_scroll:
     STA PPU_SCROLL   ; set y-scroll to 0
 
     ;; code from book
-    lda #0           ; Select song 1
-    jsr play_music
+    LDA #0           ; Select song 1
+    JSR play_music
     ;;
 
     ; FOREVER LOOP
     forever:
         JSR Main ; Main loop | START YOUR ADVENTURE HERE !!!!!!!!! |
         JMP forever
-
-
-
 
 
 .proc Main                         ; MAIN LOOP OF THE GAME
@@ -346,19 +342,19 @@ end:                               ; End of the HandlePaused logic
 ; sfx_channel = sound effects channel to use
 ;*********************************************************
 .proc play_sfx
-    sta temp+9                   ; Saves the sound effect number
-    tya                          ; Saves the current register values
-    pha                         
-    txa
-    pha
-    lda temp+9                    ; Gets the sound effect number
-    ldx sfx_channel               ; Chooses the channel to play the sound effect on
-    jsr famistudio_sfx_play
-    pla                           ; Restores the register values
-    tax
-    pla
-    tay
-    rts
+    STA temp+9                   ; Saves the sound effect number
+    TYA                          ; Saves the current register values
+    PHA                         
+    TXA
+    PHA
+    LDA temp+9                    ; Gets the sound effect number
+    LDX sfx_channel               ; Chooses the channel to play the sound effect on
+    JSR famistudio_sfx_play
+    PLA                           ; Restores the register values
+    TAX
+    PLA
+    TAY
+    RTS
 .endproc
 
 ;*********************************************************
@@ -366,18 +362,18 @@ end:                               ; End of the HandlePaused logic
 ; a = number of the music track to play
 ;*********************************************************
 .proc play_music
-    sta temp+9                    ; Saves the song number
-    tya                           ; Saves the current register values
-    pha
-    txa
-    pha
-    lda temp+9                    ; Gets the music number
-    jsr famistudio_music_play
-    pla                           ; Restores the register values
-    tax
-    pla
-    tay
-    rts
+    STA temp+9                    ; Saves the song number
+    TYA                           ; Saves the current register values
+    PHA
+    TXA
+    PHA
+    LDA temp+9                    ; Gets the music number
+    JSR famistudio_music_play
+    PLA                           ; Restores the register values
+    TAX
+    PLA
+    TAY
+    RTS
 .endproc
 
 
@@ -624,7 +620,8 @@ nmi:                               ; NMI INTERUPT
     STA PPU_SCROLL              ; y scroll
     LDA #$01                    ; tell the main loop that a new frame started
     STA nmi_flag                ; ...
-    jsr famistudio_update          ; code from the book
+    
+    jsr famistudio_update       ; code from the book
     
     PLA                         ; restore Y
     TAY                         ; ...
