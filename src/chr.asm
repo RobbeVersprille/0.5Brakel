@@ -28,8 +28,8 @@ CURSOR_COLOR4     = $10
 
 PaletteData:
     ;Backdrop pallets
-    .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
-    .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
+    .byte COL_BACKDROP, COL_BACKDROP, COL_BACKDROP, COL_BACKDROP
+    .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK ; Conveyor pallet (has colour swapping for animation)
     .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
     .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
     ;Sprite pallets
@@ -62,7 +62,7 @@ PaletteData:
 ; so the 4 steps are: A, B, A swapped, B swapped = 0, 1, 2, 3 px.
 ; ====================================================
 
-.macro StaticTiles                    ; tiles that never animate (tile $05 and up)
+.macro StaticTiles                    ; tiles that never animate 
     ; add every non-animated background tile here (grass, font, UI, buildings)
     .byte $1C,$2A,$65,$93,$C7,$AE,$5C,$38,$1C,$36,$5B,$EF,$BF,$DE,$7C,$38 ; Bread
     .byte $08,$1C,$1A,$3E,$56,$E3,$85,$20,$00,$00,$04,$00,$28,$1C,$7A,$DF ; Coin

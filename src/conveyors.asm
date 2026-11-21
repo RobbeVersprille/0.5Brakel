@@ -7,7 +7,7 @@
 ;   RemoveConveyor - IN: A = low byte of tile address, X = high byte
 ;                    (Place/Remove write straight to the PPU: call them only
 ;                    while rendering is off or during VBlank)
-;   ConveyorInit   - IN: none; call once in reset, before NMI is enabled
+;   InitConveyor   - IN: none; call once in reset, before NMI is enabled
 ;   ConveyorTick   - IN: none; call once per frame from the main loop
 ;   ConveyorUpload - IN: none; call from NMI, while VBlank is running
 ;                    OUT: A = value for PPUCTRL bit 4 (OR it into $2000)
@@ -42,7 +42,7 @@
 .export PlaceConveyor                 ; make visible to other files
 .export RotateConveyor                ; make visible to other files
 .export RemoveConveyor                ; make visible to other files
-.export ConveyorInit                  ; make visible to other files
+.export InitConveyor                  ; make visible to other files
 .export ConveyorTick                  ; make visible to other files
 .export ConveyorUpload                ; make visible to other files
 
@@ -123,9 +123,9 @@ OAM_SHADOW = $0200                    ; RAM page that is sent to OAM by $4014
 .endproc
 
 ; ---------------------------------------------------------------------
-; ConveyorInit - reset the animation and park all items
+; InitConveyor - reset the animation and park all items
 ; ---------------------------------------------------------------------
-.proc ConveyorInit
+.proc InitConveyor
     LDA #CONVEYOR_STEP_FRAMES         ; frames per animation step
     STA conveyor_timer                ; start the countdown of the first step
     LDA #$00                          ; step 0 = frame A, normal colours
