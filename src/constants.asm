@@ -32,24 +32,47 @@ HUD_POS_X   = 0
 HUD_POS_Y   = SCREEN_HEIGHT - HUD_HEIGHT
 
 ;; ==============================================
+;;  PALETTE ENUM
+;; ==============================================
+
+;; background palette enums
+.enum
+    BG_PAL_1
+    BG_PAL_2
+    BG_PAL_3
+    BG_PAL_4
+.endenum
+
+;; sprite palette enums
+.enum
+    SP_PAL_1
+    SP_PAL_2
+    SP_PAL_3
+    SP_PAL_4
+.endenum
+
+;; ==============================================
 ;;  TILE CONSTANTS
 ;; ==============================================
 
 .enum
-    TILE0
-    TILE1
-    TILE2
-    TILE3
-    TILE4
-    TILE5
-    TILE6
-    TILE7
-    TILE8
-    TILE9
-    TILE10
-    TILE11
-    TILE12
-    TILE13
+    EMPTY_TILE
+    
+    CONVEYER_RIGHT
+    CONVEYER_DOWN
+    CONVEYER_LEFT
+    CONVEYER_UP
+
+    CURSOR_TILE
+
+    BREAD_TILE
+    SAND_TILE
+    COIN_TILE
+    WHEAT_TILE
+    PLANK_TILE
+    LOG_TILE
+    STONE_TILE
+    DUVEL_TILE
 
     WORKER_TILE
 
@@ -60,7 +83,7 @@ HUD_POS_Y   = SCREEN_HEIGHT - HUD_HEIGHT
     BOTTOM_RIGHT_CORNER
     HORIZONTAL_EDGE
     VERTICAL_EDGE
-    EMPTY_TILE
+    EMPTY_HUD_TILE
 
     ;; item tiles
     PLACEHOLDER_TILE
