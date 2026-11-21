@@ -6,11 +6,16 @@
 .export PaletteData                   ; make visible to other files
 
 ; Colours and the animated sub-palette
-COL_BACKDROP = $1A                    ; shared backdrop colour
+COL_BACKDROP = $1A                         ; shared backdrop colour
 
 CONVEYOR_DARK     = $00                    ; dark grey
 CONVEYOR_LIGHT    = $10                    ; light grey
 CONVEYOR_BLACK    = $0F                    ; black
+
+;TODO RENAME THESE VARIABLES
+CURSOR_COLOR2     = $30
+CURSOR_COLOR3     = $28
+CURSOR_COLOR4     = $10
 
 .segment "CODE"                       ; palette lives in PRG-ROM
 
@@ -19,9 +24,17 @@ CONVEYOR_BLACK    = $0F                    ; black
 ; ====================================================
 
 PaletteData:
-    .repeat 8
-        .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
-    .endrepeat
+    ;Backdrop pallets
+    .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
+    .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
+    .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
+    .byte COL_BACKDROP, CONVEYOR_DARK, CONVEYOR_LIGHT, CONVEYOR_BLACK
+    ;Sprite pallets
+    .byte COL_BACKDROP, CURSOR_COLOR2, CURSOR_COLOR3, CURSOR_COLOR4
+    .byte COL_BACKDROP, CURSOR_COLOR2, CURSOR_COLOR3, CURSOR_COLOR4
+    .byte COL_BACKDROP, CURSOR_COLOR2, CURSOR_COLOR3, CURSOR_COLOR4
+    .byte COL_BACKDROP, CURSOR_COLOR2, CURSOR_COLOR3, CURSOR_COLOR4
+    
 
 ; ====================================================
 ; CHR-ROM: 8 KB total
@@ -64,3 +77,6 @@ PaletteData:
 .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3E,$7E,$46,$0C,$0C,$18,$18,$18   ; 7
 .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$7C,$C6,$C6,$7C,$C6,$C6,$FE,$38   ; 8
 .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$66,$66,$3E,$06,$46,$3C   ; 9
+
+.byte $E7,$81,$81,$00,$00,$81,$81,$E7,$00,$00,$00,$00,$00,$00,$00,$00 ; Cursor sprite
+

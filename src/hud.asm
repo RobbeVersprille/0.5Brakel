@@ -4,11 +4,6 @@
 
 ;; ================ EXPORTS ===============================
 
-;;  ----------- VARIABLES -----------------------
-;; money:       (TESTING VARIABLE, DONT USE!!!)
-;; villagers:   (TESTING VARIABLE, DONT USE!!!)
-;; food:        (TESTING VARIABLE, DONT USE!!!)
-
 ;; --------------- FUNCTIONS --------------------
 ;; InitHud
 ;; Initialises hud variables in ram
@@ -25,20 +20,14 @@
 
 .include "constants.asm"
 
-.export money, food, villagers
-.export ShowHud
+.export ShowHud, InitHud
 .export SelectableItemTable
 
 .import FillDecimalSegments
 
 ;; ========================================================
-;;  HUD RENDER CONSTANTS
+;;  LOCAL HUD CONSTANTS
 ;; ========================================================
-
-HUD_WIDTH   = SCREEN_WIDTH
-HUD_HEIGHT  = 7
-HUD_POS_X   = 0
-HUD_POS_Y   = SCREEN_HEIGHT - HUD_HEIGHT
 
 HUD_BACKGROUND_PALETTE = $00
 
@@ -50,25 +39,6 @@ HUD_POS_ATTRTABLE = $23C0 | (HUD_OFFSET & $0C00) | ((HUD_OFFSET >> 4) & $38) | (
 
 HUD_ATTRIBUTE_WIDTH = HUD_WIDTH / ATTRSIZE
 HUD_ATTRIBUTE_HEIGHT = (HUD_HEIGHT / ATTRSIZE) + 2
-
-;; ========================================================
-;;  HUD TILE CONSTANTS
-;; ========================================================
-
-;; border tiles
-TOP_LEFT_CORNER     = $0A
-TOP_RIGHT_CORNER    = $0B
-BOTTOM_LEFT_CORNER  = $0C
-BOTTOM_RIGHT_CORNER = $0D
-HORIZONTAL_EDGE     = $0E
-VERTICAL_EDGE       = $0F
-EMPTY_TILE          = $10
-
-;; item tiles
-PLACEHOLDER_TILE    = $11
-
-;; number tiles
-NUMBER_TILE         = $12
 
 ;; ========================================================
 ;;  MACROS
@@ -111,10 +81,47 @@ NUMBER_TILE         = $12
     FOOD_SIZE = 1
     food:       .res FOOD_SIZE      ; reserve 1 byte for the amount of food
 
+HUD_VARIABLES_SIZE = HudVariablesEnd - HudVariables
+HudVariables:
     MAX_SEGMENTS_SIZE = 5                   ; max amount of segments bytes
     segments_copy: .res MAX_SEGMENTS_SIZE   ; copy of segments to display
     segments_size: .res 1                   ; amount of segments to display
+HudVariablesEnd:
 .segment "CODE"
+
+.proc InitHud
+    .assert HUD_VARIABLES_SIZE <= $FF, error, "Total amount of hud variables exceeds a value that can be indexed using X"
+
+    LDA #$00    ; load initialise value in A
+    TAX         ; set index of varibale byte to initialise to 0
+@loop:
+    STA HudVariables, X ; store init value in variable byte
+    
+    INX                     ; increment index of byte to initialise
+    CPX #HUD_VARIABLES_SIZE  ; check if index is still less than total amount of bytes to initialise
+    BNE @loop               ; keep looping while index is not same as total amount of bytes to initialise
+
+    ;; Add dummy data into money, food and villagers
+    LDA #$42
+    STA money
+    LDA #$94
+    STA money + 1
+    LDA #$96
+    STA money + 2
+    LDA #$72
+    STA money + 3
+    LDA #$96
+    STA money + 4
+
+    LDA #$69
+    STA food
+
+    LDA #$67
+    STA villagers
+
+    RTS
+
+.endproc
 
 .proc ShowHud
 
@@ -224,8 +231,7 @@ end:
 .endproc
 
 .proc DrawHudItems
-    LDY #(ITEM_TABLE_SIZE / ITEM_TABLE_WIDTH)   ; amount of items to process
-    LDX 0                                       ; index in item table
+    LDX #$00    ; current index in item table
 
 loop:
     TXA ; transfer current index value to a
@@ -237,7 +243,7 @@ loop:
     ADC #<HUD_POS_NAMETABLE ; add low byte of nametable pos with nametable offset
     TAX                     ; transfer low byte to X to store
     LDA #>HUD_POS_NAMETABLE ; load high byte of nametable pos
-    ADC 0                   ; add carry of previous addition
+    ADC #$00                   ; add carry of previous addition
 
 storeItemNametablePos:
     STA PPUADDR ; store high byte into ppuaddr
