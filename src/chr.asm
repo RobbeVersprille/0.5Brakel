@@ -63,7 +63,7 @@ PaletteData:
 ; ====================================================
 
 .macro StaticTiles                    ; tiles that never animate 
-    ; add every non-animated background tile here (grass, font, UI, buildings)
+    ; add every non-animated tile here (grass, font, UI, buildings)
     .byte $1C,$2A,$65,$93,$C7,$AE,$5C,$38,$1C,$36,$5B,$EF,$BF,$DE,$7C,$38 ; Bread
     .byte $08,$1C,$1A,$3E,$56,$E3,$85,$20,$00,$00,$04,$00,$28,$1C,$7A,$DF ; Coin
     .byte $00,$3C,$66,$66,$66,$66,$3C,$00,$3C,$42,$99,$99,$99,$99,$42,$3C ; Sand
