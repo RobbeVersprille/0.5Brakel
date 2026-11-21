@@ -1,11 +1,4 @@
-; Besturing:
-;   A-knop       = rode achtergrond, zwart punt
-;   B-knop       = blauwe achtergrond, wit punt
-;   Pijl omhoog  = punt omhoog bewegen
-;   Pijl omlaag  = punt omlaag bewegen
-;   Pijl links   = punt naar links bewegen
-;   Pijl rechts  = punt naar rechts bewegen
-
+; Tom's Favourite NES Game
 .import InitConveyor
 .import ConveyorTick
 .import ConveyorUpload
@@ -65,7 +58,7 @@ PALETTE_BYTES = 12                    ; size of PaletteData in chr.asm (3 palett
         LEFT_BUTTON   = %00000010    ; bit 6 = Left
         RIGHT_BUTTON  = %00000001    ; bit 7 = Right    
     nmi_flag:    .res 1        ; set by the NMI, cleared by the main loop 
- 
+
     selected_building_mode: .res 1   ; Keeps track of the selected "building" (factory, depo, area, belt,....) 
         DEPOSIT_STATE     = $00      ; bit 0 = Deposit
         CONVEYER_STATE    = $01      ; bit 1 = Conveyer

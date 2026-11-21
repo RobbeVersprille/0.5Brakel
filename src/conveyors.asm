@@ -167,7 +167,7 @@ initLoop:
     LDA #CONVEYOR_STEP_FRAMES         ; reload the frame countdown
     STA conveyor_timer                ; for the next step
 
-    JSR ConveyorMoveItems             ; items move 1 px, like the belt texture does
+    ; JSR ConveyorMoveItems             ; items move 1 px, like the belt texture does
 
     LDA conveyor_step                 ; current step
     CLC                               ; clear carry before adding
