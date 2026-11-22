@@ -1,12 +1,11 @@
 ; Tom's Favourite NES Game
-.import InitConveyor
-.import ConveyorTick
-.import ConveyorUpload
+.include "constants.asm"
+
+.import InitConveyor, ConveyorTick, ConveyorUpload 
 .import PlaceConveyor                 ; write one conveyor tile (PPU address in A / X)      ONLY USE IN NMI
 .import RotateConveyor                ; turn the direction that PlaceConveyor uses
 .import RemoveConveyor                ; remove one conveyor tile (PPU address in A / X)     ONLY USE IN NMI
-
-.include "constants.asm"
+.importzp conveyor_dir                ; zp variable for conveyor direction
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
@@ -296,17 +295,9 @@ attributeLoop:
         STA oam_copy, X
     INX
 
-    INX; Skip the tile selection for now (TODO update cursor to selceted build tile)
-    LDA flags 
-    AND #IS_BUILDING_FLAG 
-    BEQ SetNormalPallet ; Skip setting the pallet to ghost when build_flag is not set
-    LDA #GHOST_PALLETTE
-    JMP StorePallet
-    SetNormalPallet:
-        LDA #CURSOR_PALETTE
-    StorePallet:
-        STA oam_copy, X
+    JSR SelectCursorSpriteAndPallet ; setting byte 1 and 2
     INX
+    
     LDA cursor_x 
     ASL  ; multiply by 2
     ASL  ; multiply by 4 
@@ -351,10 +342,76 @@ attributeLoop:
     RTS
 .endproc
 
-.proc SelectCursorSprite            ; Select the correct cursor sprite based on current game flags
+.proc SelectCursorSpriteAndPallet            ; Select the correct cursor sprite and pallet based on current game flags
+    ; if not IS_BUILDING_FLAG set sprite to cursor sprite skip al others
+    ; if build mode check which item is selected 
+    ; if cursor check cursor direction
+
+    LDA flags
+    AND #IS_BUILDING_FLAG
+    BNE checkBuildModes    ; is building so check which sprite to use 
     
-    
-    RTS
+    LDA #CURSOR_TILE
+    STA oam_copy, X
+    INX
+    LDA #CURSOR_PALETTE
+    STA oam_copy, X
+    JMP end
+
+    checkBuildModes:
+        LDA selected_building_mode
+   
+        CMP #DEPOSIT_STATE
+        BEQ SetSpriteAsDeposit
+
+        CMP #CONVEYOR_STATE       
+        BEQ SetSpriteAsConveyor
+
+        CMP #FACTORY_STATE
+        BEQ SetSpriteAsFactory
+
+        CMP #REFINERY_STATE
+        BEQ SetSpriteAsRefinery
+
+        CMP #COLLECTION_STATE
+        BEQ SetSpriteAsCollection
+
+        LDA #PLACEHOLDER_TILE
+        STA oam_copy, X
+        JMP endBuildModes                ; No valid Mode
+
+
+
+        SetSpriteAsDeposit:                   ; Set Sprite as Deposit
+            LDA #PLACEHOLDER_TILE
+            STA oam_copy, X
+            JMP endBuildModes        
+        SetSpriteAsConveyor:                  ; Set Sprite as conveyors
+            LDA #CONVEYER_RIGHT
+            CLC
+            ADC conveyor_dir
+            STA oam_copy, X
+            JMP endBuildModes
+        SetSpriteAsFactory:                   ; Set Sprite as factory
+            LDA #PLACEHOLDER_TILE
+            STA oam_copy, X
+            JMP endBuildModes
+        SetSpriteAsRefinery:                  ; Set Sprite as refinery
+            LDA #PLACEHOLDER_TILE
+            STA oam_copy, X
+            JMP endBuildModes
+        SetSpriteAsCollection:                ; Set Sprite as collection
+            LDA #PLACEHOLDER_TILE
+            STA oam_copy, X
+            JMP endBuildModes
+
+    endBuildModes:    
+        INX
+        LDA #GHOST_PALLETTE
+        STA oam_copy, X
+        JMP end
+    end:
+        RTS
 .endproc
 
 .proc HandlePaused                 ; Handles/Updates the paused state of the game
