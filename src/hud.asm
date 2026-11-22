@@ -4,16 +4,16 @@
 
 ;; ================ EXPORTS ===============================
 
-;; --------------- FUNCTIONS --------------------
+;; --------------- SUBROUTINES ----------------------------
 ;; InitHud
-;; Initialises hud variables in ram
-;; registers used: A
+;;  Initialises hud variables in ram
+;;  registers used: A
 
 ;; ShowHud
-;; Draws the hud at the bottom of the screen
-;; registers used: A, X, Y
+;;  Draws the hud at the bottom of the screen
+;;  registers used: A, X, Y
 
-;; ---------------- TABLES ----------------------
+;; ---------------- TABLES --------------------------------
 ;; SelectableItemTable: contains all HUD items that are selectable by the cursor (related: SELECTABLE_ITEM_AMOUNT)
 
 ;; ========================================================

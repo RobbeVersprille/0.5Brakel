@@ -13,7 +13,7 @@
 ;;  Initialises money variable with all 0s
 ;;  registers used: A, X
 
-;; AddValue
+;; AddMoney
 ;;  adds a decimal value to the money variable
 ;;  this keeps every byte between [0-99]
 ;;  @param A: value to add (THIS MUST BE A VALUE IN [0-99]!!!)
@@ -25,7 +25,7 @@
 .include "constants.asm"
 
 .export money
-.export InitMoney, AddValue
+.export InitMoney, AddMoney
 
 .segment "BSS"
 money:  .res MONEY_BYTES    ; reserve an amount of bytes to store player money
@@ -53,7 +53,7 @@ money:  .res MONEY_BYTES    ; reserve an amount of bytes to store player money
 ;; @param A: value to add (THIS MUST BE A VALUE IN [0-99]!!!)
 ;; @param X: add offset (if you want to add 1000 => A = 10, X = 1)
 ;; registers used: A, X
-.proc AddValue
+.proc AddMoney
     CLC             ; clear carry
     ADC money, X    ; add value to byte at offset index X
     STA money, X    ; store added value back

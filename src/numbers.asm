@@ -6,14 +6,22 @@
 ;; =====================EXPORTS============================
 
 ;; ---------------------VARIABLES--------------------------
-;; number
-;; number_size
+;; number:  a number that can be either in binary
+;;          or decimal but every byte needs to be less than 100
+;;
+;; number_size: the amount of bytes numer contains
 
 ;; --------------------SUBROUTINES-------------------------
 
 ;; InitNumbers
 ;;  initialises varibles in file
 ;;  registers used: A, X
+
+;; ConvertNumberToDecimal:
+;;  converts the number in the number variable to decimal mode
+;;  @param number: the number to convert
+;;  @param number_size: the total amount of bytes number contains
+;;  registers used: A, X, Y
 
 ;; ========================================================
 
@@ -46,6 +54,10 @@ NumberVariablesEnd:
     RTS
 .endproc
 
+;; converts the number in the number variable to decimal mode
+;; @param number: the number to convert
+;; @param number_size: the total amount of bytes number contains
+;; registers used: A, X, Y
 .proc ConvertNumberToDecimal
     LDX #$00    ; use X as byte index in number variable
 
