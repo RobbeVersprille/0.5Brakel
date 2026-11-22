@@ -47,7 +47,7 @@ START_ADDRESS_CURSOR_OAM = $00;
 
     selected_building_mode: .res 1   ; Keeps track of the selected HUD element (factory, depo, area, belt,....) 
         DEPOSIT_STATE     = $00      ; Deposit
-        CONVEYER_STATE    = $01      ; Conveyer
+        CONVEYOR_STATE    = $01      ; Conveyor
         AREA_SELECT_STATE = $02      ; Area Select
         FACTORY_STATE     = $03      ; Factory     
         REFINERY_STATE    = $04      ; Refinery      
@@ -177,11 +177,11 @@ reset_scroll:
 
 
 .proc Main                         ; MAIN LOOP OF THE GAME
-waitNmi:
-    LDA nmi_flag                ; did the NMI run since the last frame?
-    BEQ waitNmi                 ; no: wait
-    LDA #$00                    ; yes: clear the flag
-    STA nmi_flag                ; for the next frame
+    waitNmi:
+        LDA nmi_flag                ; did the NMI run since the last frame?
+        BEQ waitNmi                 ; no: wait
+        LDA #$00                    ; yes: clear the flag
+        STA nmi_flag                ; for the next frame
     JSR ConveyorTick            ; once per frame
 
     JSR ReadController             ; Read controller input
@@ -195,13 +195,19 @@ waitNmi:
 
     LDA flags                      ; LOAD the flags
     AND #BUILD_MENU_FLAG           ; check bit for BUILD_MENU_FLAG of the flags is set
-    BEQ  skipBuildMenu              ; Game not in build mode -> Skip
-    JSR BuildMode                  ; Game in build mode jump to logic
+    BEQ skipHUDMode                ; Game not in HUD mode -> Skip
+    JSR HudMode                    ; Game in HUD mode jump to logic
 
-skipBuildMenu:                     ; Skip the build Mode logic
+skipHUDMode:                       ; Skip the HUD Mode logic
     LDA flags
-    AND #BUILD_MENU_FLAG ; check bit 1 of the flags is set
-    BNE skipAreaSelect ; Game not in area select mode
+    AND #ROTATE_FLAG               ; Check if Rotate flag is set
+    BEQ skipRotate                 ; Not Rotating
+    JSR Rotate
+
+skipRotate:
+    LDA flags
+    AND #SELECTING_FLAG ; check bit 1 of the flags is set
+    BEQ skipAreaSelect ; Game not in area select mode
     JSR AreaSelectMode ; Game in area select mode
 skipAreaSelect:                    ; Skip Area select Mode logic
 end:                               ; END of MAIN
@@ -418,7 +424,7 @@ end:                               ; End of the HandlePaused logic
 .endproc
 
 
-.proc BuildMode                    ; Logic for handling the Build Mode
+.proc HudMode                    ; Logic for handling the Build Mode
     LDA flags
     AND #IS_BUILDING_FLAG
     BEQ browseMenu                 ; not building so move the cursor in the HUD
@@ -462,6 +468,45 @@ loopToFront:                        ; Reset the selected building mode to #DEPOS
 skipRight:                         ; Skip the logic for Right cursor movement inside the HUD
     JSR UpdateCursorInHud          ; Updates the cursor to be on the correct Hud Button
     RTS
+.endproc
+
+.proc Rotate
+    LDA selected_building_mode
+   
+    CMP #DEPOSIT_STATE
+    BEQ RotDeposit
+
+    CMP #CONVEYOR_STATE       
+    BEQ RotConveyor
+
+    CMP #FACTORY_STATE
+    BEQ RotFactory
+
+    CMP #REFINERY_STATE
+    BEQ RotRefinery
+
+    CMP #COLLECTION_STATE
+    BEQ RotCollection
+
+    JMP EndRotate                ; other modes: nothing to rotate
+
+    RotDeposit:                   ; Rotate logic for Deposit
+        JMP EndRotate
+    RotConveyor:                  ; Rotate logic for conveyors
+        JSR RotateConveyor
+        JMP EndRotate
+    RotFactory:                   ; Rotate logic for factory
+        JMP EndRotate
+    RotRefinery:                  ; Rotate logic for refinery
+        JMP EndRotate
+    RotCollection:                ; Rotate logic for collection
+        JMP EndRotate
+
+    EndRotate:
+        LDA flags
+        AND #(ROTATE_FLAG ^ $FF)
+        STA flags                ;Disable Rotate Flag
+        RTS
 .endproc
 
 .proc Build                        ; Build logic
@@ -674,8 +719,8 @@ inputDone:                         ; END of input checks
     CMP #DEPOSIT_STATE
     BEQ BuildDeposit
 
-    CMP #CONVEYER_STATE       
-    BEQ BuildConveyer
+    CMP #CONVEYOR_STATE       
+    BEQ BuildConveyor
 
     CMP #FACTORY_STATE
     BEQ BuildFactory
@@ -691,7 +736,7 @@ inputDone:                         ; END of input checks
 BuildDeposit:                   ; Build logic for Deposit
     JMP EndBuild
 
-BuildConveyer:                  ; Build logic for conveyers
+BuildConveyor:                  ; Build logic for conveyors
     LDA cursor_y
     LSR
     LSR

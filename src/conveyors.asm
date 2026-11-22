@@ -46,8 +46,7 @@
 .export RemoveConveyor                ; make visible to other files
 .export InitConveyor                  ; make visible to other files
 .export ConveyorTick                  ; make visible to other files
-.export ConveyorUpload                ; make visible to other files
-
+.export ConveyorUpload                ; make visible to other files.export conveyor_dir                  
 ; Conveyor directions (value of 'conveyor_dir')
 CONVEYOR_DIR_MASK = %00000011         ; 4 directions: 0..3
 CONVEYOR_FIRST_TILE = CONVEYER_RIGHT  ; tile index of the right conveyor, + conveyor_dir for the others
