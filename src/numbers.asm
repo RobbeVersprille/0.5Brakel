@@ -1,0 +1,110 @@
+;; ========================================================
+;;  file containing code that handles working 
+;;  with decimal number and binary numbers simultaneously
+;; ========================================================
+
+;; =====================EXPORTS============================
+
+;; ---------------------VARIABLES--------------------------
+;; number
+;; number_size
+
+;; --------------------SUBROUTINES-------------------------
+
+;; InitNumbers
+;;  initialises varibles in file
+;;  registers used: A, X
+
+;; ========================================================
+
+.include "constants.asm"
+
+.export number, number_size
+.export InitNumbers, ConvertNumberToDecimal
+
+.segment "BSS"
+
+NumberVariables:
+    MAX_NUMBER_SIZE = 5
+    number:         .res MAX_NUMBER_SIZE    ; stored segments after conversion from binary to decimal
+    number_size:    .res 1                  ; amount bytes of decimal number
+NumberVariablesEnd:
+
+.segment "CODE"
+
+.macro FillBinaryNumber number_addr, size
+
+    LDX #$00    ; set index to 0
+@loop:
+    LDA number_addr, X  ; load byte at index X in A
+    STA number, X       ; store byte in binary number at index X
+
+    INX         ; increment index
+    CPX size    ; compare index to amount of bytes to copy
+    BNE @loop   ; keep looping while index is smaller
+
+.endmacro
+
+;; initialises varibles in file
+;; registers used: A, X
+.proc InitNumbers
+    LDA #$00    ; load init value in A
+    TAX         ; set X to 0, use as index
+@loop:
+    STA NumberVariables, X                      ; init variable byte at index X
+    INX                                         ; increment index
+    CPX NumberVariablesEnd - NumberVariables    ; compare index to amount of bytes to initialise
+    BNE @loop                                   ; keep looping if index is still less than total bytes needed to initialise
+
+    RTS
+.endproc
+
+.proc ConvertNumberToDecimal
+    LDX #$00    ; use X as byte index in number variable
+
+loop:
+    LDY #0          ; use Y as second nibble decimal and init with 0
+    LDA number, X   ; load byte at index X in A
+    CMP #50         ; compare A to 50
+    BCC cmp20       ; if A <= 50, compare to 20
+
+    SBC #50     ; subtract 50 from A
+    LDY #5      ; set second nibble (tens) to 5
+    BNE cmp20 
+
+div20:
+    INY     ; increment tens
+    INY     ; increment tens
+    SBC #20
+
+cmp20:
+    CMP #20
+    BCS div20
+
+cmp10:
+    CMP #10
+    BCC loopTail
+    SBC #10
+    INY             ; increment tens
+
+loopTail:
+    STA number, X   ; store ones into byte
+    TYA             ; tranfer tens into A
+
+    ;; shift tens value into high nibble
+    ASL
+    ASL
+    ASL
+    ASL
+
+    ADC number, X   ; add ones value from number
+    STA number, X   ; store tens + ones into byte
+
+    INX             ; increment byte index
+    CMP number_size ; compare to total amount of bytes to process
+    BNE loop        ; keep looping while index is less than amount of bytes to process
+
+end:
+    RTS
+
+.endproc
