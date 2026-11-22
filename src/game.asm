@@ -10,7 +10,7 @@
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
-.import ShowHud, InitHud
+.import ShowHud, InitHud, SelectableItemTable
 
 .setcpu "6502"
 
@@ -46,15 +46,16 @@ CURSOR_PALETTE = $01;
         RIGHT_BUTTON  = %00000001    ; bit 7 = Right    
     nmi_flag:    .res 1        ; set by the NMI, cleared by the main loop 
 
-    selected_building_mode: .res 1   ; Keeps track of the selected "building" (factory, depo, area, belt,....) 
-        DEPOSIT_STATE     = $00      ; bit 0 = Deposit
-        CONVEYER_STATE    = $01      ; bit 1 = Conveyer
-        AREA_SELECT_STATE = $02      ; bit 2 = Area Select
-        FACTORY_STATE     = $03      ; bit 3 = Factory     
-        REFINERY_STATE    = $04      ; bit 4 = Refinery      
-        COLLECTION_STATE  = $05      ; bit 5 = Collection     
-        PEOPLE_STATE      = $06      ; bit 6 = People 
-        DESTROY_STATE     = $07      ; bit 7 = Destroy
+    selected_building_mode: .res 1   ; Keeps track of the selected HUD element (factory, depo, area, belt,....) 
+        DEPOSIT_STATE     = $00      ; Deposit
+        CONVEYER_STATE    = $01      ; Conveyer
+        AREA_SELECT_STATE = $02      ; Area Select
+        FACTORY_STATE     = $03      ; Factory     
+        REFINERY_STATE    = $04      ; Refinery      
+        COLLECTION_STATE  = $05      ; Collection     
+        PEOPLE_STATE      = $06      ; People 
+        DESTROY_STATE     = $07      ; Destroy
+        DEBUG_COIN_STATE  = $08      ; Debug (Add coins)
 
     flags: .res 1
         PAUSED_FLAG     = %00000001  ; bit 0 = paused
@@ -67,20 +68,19 @@ CURSOR_PALETTE = $01;
 .segment "CODE"
 ;;code from the book
 ; FamiStudio config.
-FAMISTUDIO_CFG_EXTERNAL = 1
-FAMISTUDIO_CFG_DPCM_SUPPORT = 1
-FAMISTUDIO_CFG_SFX_SUPPORT = 1
-FAMISTUDIO_CFG_SFX_STREAMS = 2
-FAMISTUDIO_CFG_EQUALIZER = 1
-FAMISTUDIO_USE_VOLUME_TRACK = 1
-FAMISTUDIO_USE_PITCH_TRACK = 1
-FAMISTUDIO_USE_SLIDE_NOTES = 1
-FAMISTUDIO_USE_VIBRATO = 1
-FAMISTUDIO_USE_ARPEGGIO = 1
-FAMISTUDIO_CFG_SMOOTH_VIBRATO = 1
-FAMISTUDIO_USE_RELEASE_NOTES = 1
-FAMISTUDIO_DPCM_OFF = $e000
-
+    FAMISTUDIO_CFG_EXTERNAL = 1
+    FAMISTUDIO_CFG_DPCM_SUPPORT = 1
+    FAMISTUDIO_CFG_SFX_SUPPORT = 1
+    FAMISTUDIO_CFG_SFX_STREAMS = 2
+    FAMISTUDIO_CFG_EQUALIZER = 1
+    FAMISTUDIO_USE_VOLUME_TRACK = 1
+    FAMISTUDIO_USE_PITCH_TRACK = 1
+    FAMISTUDIO_USE_SLIDE_NOTES = 1
+    FAMISTUDIO_USE_VIBRATO = 1
+    FAMISTUDIO_USE_ARPEGGIO = 1
+    FAMISTUDIO_CFG_SMOOTH_VIBRATO = 1
+    FAMISTUDIO_USE_RELEASE_NOTES = 1
+    FAMISTUDIO_DPCM_OFF = $e000
 
 ; CA65-specifc config.
 .define FAMISTUDIO_CA65_ZP_SEGMENT ZEROPAGE
@@ -194,7 +194,7 @@ waitNmi:
 
     LDA flags                      ; LOAD the flags
     AND #BUILD_MENU_FLAG           ; check bit for BUILD_MENU_FLAG of the flags is set
-    BNE skipBuildMenu              ; Game not in build mode -> Skip
+    BEQ  skipBuildMenu              ; Game not in build mode -> Skip
     JSR BuildMode                  ; Game in build mode jump to logic
 
 skipBuildMenu:                     ; Skip the build Mode logic
@@ -285,7 +285,10 @@ attributeLoop:
     ASL  ; multiply by 4 
     ASL  ; multiply by 8 (sprite size = 8 pixels)
     SEC
-    SBC #$01 ; minus 1 because yPos is delayed by 1 scan line
+    SBC #$01     ; minus 1 because yPos is delayed by 1 scan line
+    BCS @storeY  ; No carry so not scan line 0;
+    LDA #$00     ; y index 0 gets drawn on scan line 1 
+@storeY:
     STA oam_copy, X
     INX
 
@@ -300,8 +303,30 @@ attributeLoop:
     RTS
 .endproc
 .proc UpdateCursorInHud            ; Updates the cursor x an y pos in the oam copy for its position on in the HUD
-    RTS
+    LDA selected_building_mode     ; Get current seltected index in HUD
+    ASL                            ; Multiply by 2
+    CLC
+    ADC selected_building_mode     ; Add original index value to make it multiply by 3 (this to have the correct ofset for the SelectableItemTable which stores items in increments of 3 bytes)
+    TAX                            ; Transfer A to X to be used as an adress ofset
+    LDA SelectableItemTable, X     ; Select the data from the HUD SelectableItemTable
+    STA temp                       ; Store the data in a temp value 
 
+    LSR
+    LSR
+    LSR
+    LSR
+    LSR                             ; Shift out x pos only keeping y pos (3 high bits)     
+    
+    CLC
+    ADC #HUD_POS_Y                   ; Add the Hud Y Pos
+
+    STA cursor_y                    ; Store Y pos in the cursor_y
+    LDA temp                        ; reload the data from the HUD SelectableItemTable
+    AND #%00011111                  ; AND to keep only the lower 5 bits
+
+    STA cursor_x
+    JSR UpdateCursor
+    RTS
 .endproc
 .proc HandlePaused                 ; Handles/Updates the paused state of the game
     LDA buttons         ; Load button input
@@ -397,8 +422,8 @@ browseMenu:                        ; Start of the logic for cursor movement insi
     DEC selected_building_mode
     JMP checkRight                 ; Jump to avoid the loopback code
 
-loopToFront:                       ; Reset the selected building mode to #DESTROY_STATE (7 - back)
-    LDA #DESTROY_STATE
+loopToBack:                       ; Reset the selected building mode to #DEBUG_COIN_STATE (8 -> back)
+    LDA #DEBUG_COIN_STATE
     STA selected_building_mode 
 
 checkRight:                        ; The logic for Right cursor movement inside the HUD
@@ -409,12 +434,12 @@ checkRight:                        ; The logic for Right cursor movement inside 
     AND #RIGHT_BUTTON
     BNE skipRight               ; held, not a new press so jump
     LDA selected_building_mode
-    CMP #DESTROY_STATE
-    BEQ loopToBack               ; already at the last option 
-    DEC selected_building_mode
+    CMP #DEBUG_COIN_STATE
+    BEQ loopToFront               ; already at the last option 
+    INC selected_building_mode
     JMP skipRight                ; Jump to avoid the loopback code
 
-loopToBack:                        ; Reset the selected building mode to #DEPOSIT_STATE (0 - front)
+loopToFront:                        ; Reset the selected building mode to #DEPOSIT_STATE (0 -> front)
     LDA #DEPOSIT_STATE
     STA selected_building_mode 
 
@@ -538,7 +563,7 @@ checkUp:                           ; Checks UP button
     ; UP-BUTTON CODE NEW PRESS:
     DEC cursor_y                          ; Move up one tile
     BPL checkDown                         ; Branch if not 0 - 1 happend(cursor_y still >= 0)
-    LDA #(SCREEN_HEIGHT - HUD_HEIGHT)     ; Went below 0, wrap to the last grid row
+    LDA #(SCREEN_HEIGHT - HUD_HEIGHT - 1)     ; Went below 0, wrap to the last grid row
     STA cursor_y
 
 checkDown:                         ; Checks DOWN button
