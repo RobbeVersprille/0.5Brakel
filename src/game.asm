@@ -284,14 +284,23 @@ attributeLoop:
     ASL  ; multiply by 8 (sprite size = 8 pixels)
     SEC
     SBC #$01     ; minus 1 because yPos is delayed by 1 scan line
-    BCS @storeY  ; No carry so not scan line 0;
+    BCS storeY  ; No carry so not scan line 0;
     LDA #$00     ; y index 0 gets drawn on scan line 1 
-    @storeY:
+    storeY:
         STA oam_copy, X
     INX
 
-    INX ; Skip the pallet (set in init) (TODO implement ghost for building)
-    INX ; Skip the attributes (set in init) (TODO implement ghost for building)
+    INX; Skip the tile selection for now (TODO update cursor to selceted build tile)
+    LDA flags 
+    AND #IS_BUILDING_FLAG 
+    BEQ SetNormalPallet ; Skip setting the pallet to ghost when build_flag is not set
+    LDA #GHOST_PALLETTE
+    JMP StorePallet
+    SetNormalPallet:
+        LDA #CURSOR_PALETTE
+    StorePallet:
+        STA oam_copy, X
+    INX
     LDA cursor_x 
     ASL  ; multiply by 2
     ASL  ; multiply by 4 
@@ -505,9 +514,19 @@ readLoop:                          ; Loops 8 times to cover all input bits
     LDA flags
     AND #BUILD_MENU_FLAG
     BEQ checkB                ; Not in build menu jet
+    
     LDA flags
     AND #IS_BUILDING_FLAG
-    BEQ SetIsBuilding          ; set is building
+    BEQ SetIsBuilding         ; set is building
+
+    LDA flags
+    AND #BUILD_FLAG
+    BNE checkB                ; Build already set
+
+    LDA flags
+    ORA #BUILD_FLAG           ; set build
+    STA flags
+    JMP checkB                ; Skip SetIsBuilding   
 
     SetIsBuilding:
         LDA flags
@@ -527,6 +546,14 @@ checkB:                            ; Checks B button
     BNE checkSelect     ; If B was pressed, skip new B-Button press code and check Select-Button
 
     ; B-BUTTON CODE NEW PRESS:
+
+    LDA flags
+    AND #IS_BUILDING_FLAG
+    BEQ checkSelect         ; Is building not set
+
+    LDA flags
+    ORA #ROTATE_FLAG
+    STA flags
 
 
 checkSelect:                       ; Checks SELECT button
@@ -637,6 +664,73 @@ inputDone:                         ; END of input checks
     RTS ; Return to Main
 .endproc
 
+.proc HandleBuild
+    LDA flags
+    AND #BUILD_FLAG
+    BEQ SkipBuild               ; BUILD NOT SET
+
+    LDA selected_building_mode
+   
+    CMP #DEPOSIT_STATE
+    BEQ BuildDeposit
+
+    CMP #CONVEYER_STATE       
+    BEQ BuildConveyer
+
+    CMP #FACTORY_STATE
+    BEQ BuildFactory
+
+    CMP #REFINERY_STATE
+    BEQ BuildRefinery
+
+    CMP #COLLECTION_STATE
+    BEQ BuildCollection
+
+    JMP EndBuild                ; other modes: nothing to build
+
+BuildDeposit:                   ; Build logic for Deposit
+    JMP EndBuild
+
+BuildConveyer:                  ; Build logic for conveyers
+    LDA cursor_y
+    LSR
+    LSR
+    LSR                         ; y / 8
+    CLC
+    ADC #>NAMETABLE_0           ; + $20 (high byte of NAMETABLE_0)
+    TAX                         ; X = high byte
+
+    LDA cursor_y
+    AND #%00000111              ; y mod 8
+    ASL
+    ASL
+    ASL
+    ASL
+    ASL                         ; * 32
+    ORA cursor_x                ; A = low byte
+    JSR PlaceConveyor
+    JMP EndBuild
+
+BuildFactory:                   ; Build logic for factory
+    JMP EndBuild
+
+BuildRefinery:                  ; Build logic for refinery
+    JMP EndBuild
+
+BuildCollection:                ; Build logic for collection
+    JMP EndBuild
+
+EndBuild:                       ; Clear the build flag
+    LDA flags
+    AND #(BUILD_FLAG ^ $FF)
+    STA flags
+
+SkipBuild:
+    RTS
+.endproc
+
+
+
 ; INTERRUPTROUTINES
 nmi:                               ; NMI INTERUPT
     PHA                         ; save A
@@ -645,8 +739,9 @@ nmi:                               ; NMI INTERUPT
     TYA                         ; save Y
     PHA                         ; ...
 
-    JSR TransferOamData            ; Transfer the OAM_Copy to the PPU
-
+    JSR TransferOamData         ; Transfer the OAM_Copy to the PPU
+    JSR HandleBuild             ; Handles the building of selected item
+    
     JSR ConveyorUpload          ; palette writes, returns PPUCTRL bit 4 in A
     ORA #%10000000              ; PPUCTRL bit 7: keep NMI enabled (OR in your other PPUCTRL bits)
     STA PPU_CTRL                ; must come after the palette writes
