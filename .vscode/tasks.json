@@ -8,7 +8,7 @@
       "args": [
         "-NoProfile",
         "-Command",
-        "New-Item -ItemType Directory -Force -Path build | Out-Null; Remove-Item build\\*.o -ErrorAction SilentlyContinue; foreach ($f in Get-ChildItem src -Filter *.asm) { ca65 ('src/' + $f.Name) -I src -o ('build/' + $f.BaseName + '.o'); if ($LASTEXITCODE -ne 0) { exit 1 } }; $objs = Get-ChildItem build -Filter *.o | ForEach-Object { 'build/' + $_.Name }; ld65 -C nes.cfg -m build/game.map @objs -o build/game.nes; exit $LASTEXITCODE"
+        "New-Item -ItemType Directory -Force -Path build | Out-Null; Remove-Item build\\*.o -ErrorAction SilentlyContinue; foreach ($f in Get-ChildItem src -Filter *.asm) { ca65 -g ('src/' + $f.Name) -I src -o ('build/' + $f.BaseName + '.o'); if ($LASTEXITCODE -ne 0) { exit 1 } }; $objs = Get-ChildItem build -Filter *.o | ForEach-Object { 'build/' + $_.Name }; ld65 --dbgfile build/game.dbg -C nes.cfg -m build/game.map @objs -o build/game.nes; exit $LASTEXITCODE"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
