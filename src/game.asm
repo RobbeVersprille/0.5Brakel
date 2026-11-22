@@ -261,10 +261,7 @@ attributeLoop:
 
 .proc InitCursor                   ; Init the cursor attribute and pallet in the OAM_copy and sets its location to the center of the screen
     ; start in the center of the tile grid
-    LDA #$0F
-    STA cursor_x
-    LDA #$0F - HUD_HEIGHT
-    STA cursor_y
+    JSR ResetCursor
 
     LDX #START_ADDRESS_CURSOR_OAM
     INX
@@ -288,8 +285,8 @@ attributeLoop:
     SBC #$01     ; minus 1 because yPos is delayed by 1 scan line
     BCS @storeY  ; No carry so not scan line 0;
     LDA #$00     ; y index 0 gets drawn on scan line 1 
-@storeY:
-    STA oam_copy, X
+    @storeY:
+        STA oam_copy, X
     INX
 
     INX ; Skip the pallet (set in init) (TODO implement ghost for building)
@@ -328,6 +325,15 @@ attributeLoop:
     JSR UpdateCursor
     RTS
 .endproc
+.proc ResetCursor
+    LDA #$0B
+    STA cursor_y      ; Reset cursor_y to center ich of screen
+    LDA #$0F
+    STA cursor_x      ; Reset cursor_x to center ich of screen
+    RTS
+.endproc
+
+
 .proc HandlePaused                 ; Handles/Updates the paused state of the game
     LDA buttons         ; Load button input
     AND #START_BUTTON   ; Isolate bit 4, START-Button
@@ -540,6 +546,7 @@ checkSelect:                       ; Checks SELECT button
     STA flags        ; Save new state
     LDA #DEPOSIT_STATE ; Set cursor to deposit
     STA selected_building_mode ; Store the new flag 
+    JSR ResetCursor
     
 checkBuildState:                        ; Checks the build state before continueing with the D-pad checks if in build mode skip the D-PAD checks here
     LDA flags
