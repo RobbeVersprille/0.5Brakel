@@ -2,11 +2,16 @@
 .include "constants.asm"
 
 .import InitConveyor, ConveyorTick, ConveyorUpload 
-.import FactoryDraw, FactoryInit, PlaceFactory
 .import PlaceConveyor                 ; write one conveyor tile (PPU address in A / X)      ONLY USE IN NMI
 .import RotateConveyor                ; turn the direction that PlaceConveyor uses
 .import RemoveConveyor                ; remove one conveyor tile (PPU address in A / X)     ONLY USE IN NMI
 .importzp conveyor_dir                ; zp variable for conveyor direction
+
+.import InitFactory                    
+.import PlaceFactory                   ; write one factory tile (PPU address in A / X)      ONLY USE IN NMI
+.import RotateFactory                  ; turn the direction that PlaceFactory uses
+.import DestroyFactory                 ; remove one factory tile (PPU address in A / X)     ONLY USE IN NMI
+
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
@@ -67,11 +72,34 @@ START_ADDRESS_CURSOR_OAM = $00;
 
 
 .segment "CODE"
+;;code from the book
+; FamiStudio config.
+    FAMISTUDIO_CFG_EXTERNAL = 1
+    FAMISTUDIO_CFG_DPCM_SUPPORT = 1
+    FAMISTUDIO_CFG_SFX_SUPPORT = 1
+    FAMISTUDIO_CFG_SFX_STREAMS = 2
+    FAMISTUDIO_CFG_EQUALIZER = 1
+    FAMISTUDIO_USE_VOLUME_TRACK = 1
+    FAMISTUDIO_USE_PITCH_TRACK = 1
+    FAMISTUDIO_USE_SLIDE_NOTES = 1
+    FAMISTUDIO_USE_VIBRATO = 1
+    FAMISTUDIO_USE_ARPEGGIO = 1
+    FAMISTUDIO_CFG_SMOOTH_VIBRATO = 1
+    FAMISTUDIO_USE_RELEASE_NOTES = 1
+    FAMISTUDIO_DPCM_OFF = $e000
 
+    ; CA65-specifc config.
+    .define FAMISTUDIO_CA65_ZP_SEGMENT ZEROPAGE
+    .define FAMISTUDIO_CA65_RAM_SEGMENT BSS
+    .define FAMISTUDIO_CA65_CODE_SEGMENT CODE
+    
+    .include "famistudio_ca65.s"
+    .include "Songs/BtnPressed_SFX.s"
+    .include "Songs/Thibe_Track.s"
+;;
 
-
-reset:
-    SEI             ; Disable interrupts
+reset:                             ; Reset label
+    SEI             ; Disable CPU interrupts
     CLD             ; Disable decimal mode
 
     LDX #$40        ; Value to disable the APU-frame-IRQ (audio)
@@ -97,12 +125,58 @@ clearOam:
     LDA #$00        
     STA buttons
     STA old_buttons
-    STA bg_color
-    STA dot_color
+    STA selected_building_mode
+    STA flags     
+    STA sfx_channel
 
-    ; Continue with your game initialization here
-    ; JMP main_loop
+    JSR InitOamData
+    JSR InitCursor
+    JSR InitConveyor            ; conveyor animation and items start from step 0
+    JSR InitHud
+    JSR InitFactory
 
+    ;; code from the book
+    LDA #1
+    LDX #.lobyte(music_data_untitled)
+    LDY #.hibyte(music_data_untitled)
+    JSR famistudio_init
+    LDX #.lobyte(sounds)
+    LDY #.hibyte(sounds)
+    JSR famistudio_sfx_init
+    ;;
+
+wait_vblank:                       ; Wait for the PPU to start
+    BIT PPU_STATUS        ; Reads the PPU-status; bit 7 = VBlank on/off
+    BPL wait_vblank ; Loop util bit 7 = nul (negative bit)
+
+vblank2:                           ; second vblank wait so the PPU is fully warmed up
+    BIT PPU_STATUS
+    BPL vblank2
+    STA nmi_flag                ; no NMI has happened yet
+
+    ; Rendering is still off, so the PPU may be written at any time
+    JSR LoadPalette                ; Loading the pallet data into memory
+    JSR ClearNametable          ; empty tiles + attribute table
+    
+    JSR ShowHud
+
+enable_rendering:
+	LDA #%10000000	; Enable NMI
+	STA PPU_CTRL
+	LDA #%00011110	; Enable Sprites
+	STA PPU_MASK
+
+reset_scroll:
+    LDA #$00
+    STA PPU_SCROLL   ; set x-scroll to 0
+    STA PPU_SCROLL   ; set y-scroll to 0
+
+    ;; code from book
+    LDA #0           ; Select song 1
+    JSR play_music
+    ;;
+
+    ; FOREVER LOOP
     forever:
         JSR Main ; Main loop | START YOUR ADVENTURE HERE !!!!!!!!! |
         JMP forever

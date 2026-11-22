@@ -6,11 +6,11 @@
 ;   RotateFactory - erm is still bugged but yk.
 ;
 ; 
-;
+; TODO: rotation in a separate thing see: robbe's code
 
 
 
-
+.include "constants.asm"
 
 .import TransferOamData, oam_copy ; importing OAM
 .export FactoryDraw, PlaceFactory, DestroyFactory, RotateFactory, FactoryInit, FactoryUpdate, TakeFactoryInput
@@ -26,13 +26,7 @@ ITEM_SAND = $05                 ;Sand item ID
 ITEM_FOOD = $06                 ;Food item ID
 
 ;factory tile for drawing factory on background
-FACTORY_TILE = $0E              ;Single tile used by the entire factory
 FACTORY_TILE_COUNT = 6          ;Total number of factory tiles to draw
-
-; PPU registers
-PPU_STATUS = $2002                    ; reading it resets the address latch
-PPU_ADDR = $2006                      ; VRAM address, written high byte first
-PPU_DATA = $2007                      ; VRAM data
 
 .segment "ZEROPAGE"          ; Zero page variables
 
@@ -61,7 +55,6 @@ factory_height: .res MAX_FACTORIES           ; Number of rows
 
 factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, paused, crafting, rotation)
     IS_PLACED = %10000000 ;factory placed bit 0
-    IS_PAUSED = %01000000 ;factory paused bit 1
     CRAFTING = %00100000  ;factory is crafting a potion (cooldown) bit 2
     ROTATION_MASK = %00000011 ;lowest 2 bits contain the rotation
         ROT_0 = %00000000              ; 0 degrees
@@ -334,7 +327,7 @@ factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, pa
 .proc DestroyFactory        ; Remove factory
     
     
-
+    
     RTS                          ; Return from subroutine
 .endproc                     ; End subroutine
 

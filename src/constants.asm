@@ -73,7 +73,8 @@ HUD_POS_Y   = SCREEN_HEIGHT - HUD_HEIGHT
     LOG_TILE
     STONE_TILE
     DUVEL_TILE
-
+    FACTORY_TILE
+    
     WORKER_TILE
 
     ;; border tiles
