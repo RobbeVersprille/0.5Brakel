@@ -11,7 +11,7 @@
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
 .import ShowHud, InitHud
-.import InitMoney
+.import InitMoney, InitNumbers
 
 .setcpu "6502"
 
@@ -99,6 +99,7 @@ clearOam:
     JSR InitConveyor            ; conveyor animation and items start from step 0
     JSR InitHud
     JSR InitMoney
+    JSR InitNumbers
 
 wait_vblank:                       ; Wait for the PPU to start
     BIT PPU_STATUS        ; Reads the PPU-status; bit 7 = VBlank on/off
@@ -112,7 +113,7 @@ vblank2:                           ; second vblank wait so the PPU is fully warm
     ; Rendering is still off, so the PPU may be written at any time
     JSR LoadPalette                ; Loading the pallet data into memory
     JSR ClearNametable          ; empty tiles + attribute table
-    
+
     JSR ShowHud
 
 enable_rendering:
