@@ -7,7 +7,7 @@
 .import RemoveConveyor                ; remove one conveyor tile (PPU address in A / X)     ONLY USE IN NMI
 .importzp conveyor_dir                ; zp variable for conveyor direction
 
-.import InitFactory                    
+.import InitFactory, UpdateFactory                   
 .import PlaceFactory                   ; write one factory tile (PPU address in A / X)      ONLY USE IN NMI
 .import RotateFactory                  ; turn the direction that PlaceFactory uses
 .import DestroyFactory                 ; remove one factory tile (PPU address in A / X)     ONLY USE IN NMI
@@ -193,9 +193,13 @@ reset_scroll:
     JSR ReadController             ; Read controller input
     JSR HandlePaused               ; Handles/Updates the paused state of the game
 
+
+
     LDA flags
     AND #PAUSED_FLAG               ; check bit 0 of the flags is set
     BNE end                        ; Game paused skip al other btn handling (TODO CHECK: for now)
+
+    JSR UpdateFactory
 
     JSR HandleButtonInput          ; Handles the button input and sets or calls the according flags/subroutines
 
