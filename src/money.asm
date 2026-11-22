@@ -16,7 +16,7 @@
 ;; AddValue
 ;;  adds a decimal value to the money variable
 ;;  this keeps every byte between [0-99]
-;;  @param A: value to add
+;;  @param A: value to add (THIS MUST BE A VALUE IN [0-99]!!!)
 ;;  @param X: add offset (if you want to add 1000 => A = 10, X = 1)
 ;;  registers used: A, X
 
@@ -50,7 +50,7 @@ money:  .res MONEY_BYTES    ; reserve an amount of bytes to store player money
 
 ;; adds a decimal value to the money variable
 ;; this keeps every byte between [0-99]
-;; @param A: value to add
+;; @param A: value to add (THIS MUST BE A VALUE IN [0-99]!!!)
 ;; @param X: add offset (if you want to add 1000 => A = 10, X = 1)
 ;; registers used: A, X
 .proc AddValue
