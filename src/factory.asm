@@ -13,7 +13,7 @@
 .include "constants.asm"
 
 .import TransferOamData, oam_copy ; importing OAM
-.export FactoryDraw, PlaceFactory, DestroyFactory, RotateFactory, FactoryInit, FactoryUpdate, TakeFactoryInput
+.export FactoryDraw, PlaceFactory, DestroyFactory, RotateFactory, InitFactory, FactoryUpdate, TakeFactoryInput
 MAX_FACTORIES = 16              ;Set a limit for the number of factories in the game
 
 ;factory inventory
@@ -65,7 +65,7 @@ factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, pa
 
 .segment "CODE"              ; Code segment (hence the name)
 
-.proc FactoryInit           ; Initialize factory
+.proc InitFactory           ; Initialize factory
     LDX #$00                     ; Start at index zero
     LDA #$00                     ; Set everything to zero with this value
 
@@ -327,7 +327,7 @@ factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, pa
 .proc DestroyFactory        ; Remove factory
     
     
-    
+
     RTS                          ; Return from subroutine
 .endproc                     ; End subroutine
 
