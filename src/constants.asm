@@ -45,8 +45,8 @@ HUD_POS_Y   = SCREEN_HEIGHT - HUD_HEIGHT
 
 ;; sprite palette enums
 .enum
-    SP_PAL_1
-    SP_PAL_2
+    CURSOR_PALETTE
+    GHOST_PALLETTE
     SP_PAL_3
     SP_PAL_4
 .endenum

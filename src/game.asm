@@ -17,7 +17,6 @@
 ; Macros
 JOYPAD1 =  $4016; 
 START_ADDRESS_CURSOR_OAM = $00;
-CURSOR_PALETTE = $01;
 
 .segment "HEADER" ; Header is meestal 16 bytes        
     .byte "NES", $1A           ; Herkenningsbytes voor een NES-ROM
@@ -84,14 +83,14 @@ CURSOR_PALETTE = $01;
     FAMISTUDIO_USE_RELEASE_NOTES = 1
     FAMISTUDIO_DPCM_OFF = $e000
 
-; CA65-specifc config.
-.define FAMISTUDIO_CA65_ZP_SEGMENT ZEROPAGE
-.define FAMISTUDIO_CA65_RAM_SEGMENT BSS
-.define FAMISTUDIO_CA65_CODE_SEGMENT CODE
-
-.include "famistudio_ca65.s"
-.include "Songs/BtnPressed_SFX.s"
-.include "Songs/Thibe_Track.s"
+    ; CA65-specifc config.
+    .define FAMISTUDIO_CA65_ZP_SEGMENT ZEROPAGE
+    .define FAMISTUDIO_CA65_RAM_SEGMENT BSS
+    .define FAMISTUDIO_CA65_CODE_SEGMENT CODE
+    
+    .include "famistudio_ca65.s"
+    .include "Songs/BtnPressed_SFX.s"
+    .include "Songs/Thibe_Track.s"
 ;;
 
 reset:                             ; Reset label
@@ -505,15 +504,16 @@ readLoop:                          ; Loops 8 times to cover all input bits
     ; A-BUTTON CODE NEW PRESS:
     LDA flags
     AND #BUILD_MENU_FLAG
-    BEQ checkB                ; build menu closed
+    BEQ checkB                ; Not in build menu jet
     LDA flags
     AND #IS_BUILDING_FLAG
-    BNE checkB                ; is building is set
+    BEQ SetIsBuilding          ; set is building
 
-    LDA flags
-    ORA #IS_BUILDING_FLAG           ; set is building 
-    STA flags
-    JSR ResetCursor           ; Reset the cursor to the grid
+    SetIsBuilding:
+        LDA flags
+        ORA #IS_BUILDING_FLAG           ; set is building 
+        STA flags
+        JSR ResetCursor           ; Reset the cursor to the grid
 
 checkB:                            ; Checks B button
     LDA buttons         ; Load button input
