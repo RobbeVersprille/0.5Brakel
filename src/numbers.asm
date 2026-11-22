@@ -32,29 +32,16 @@ NumberVariablesEnd:
 
 .segment "CODE"
 
-.macro FillBinaryNumber number_addr, size
-
-    LDX #$00    ; set index to 0
-@loop:
-    LDA number_addr, X  ; load byte at index X in A
-    STA number, X       ; store byte in binary number at index X
-
-    INX         ; increment index
-    CPX size    ; compare index to amount of bytes to copy
-    BNE @loop   ; keep looping while index is smaller
-
-.endmacro
-
 ;; initialises varibles in file
 ;; registers used: A, X
 .proc InitNumbers
     LDA #$00    ; load init value in A
     TAX         ; set X to 0, use as index
-@loop:
+@Mloop:
     STA NumberVariables, X                      ; init variable byte at index X
     INX                                         ; increment index
     CPX NumberVariablesEnd - NumberVariables    ; compare index to amount of bytes to initialise
-    BNE @loop                                   ; keep looping if index is still less than total bytes needed to initialise
+    BNE @Mloop                                   ; keep looping if index is still less than total bytes needed to initialise
 
     RTS
 .endproc
@@ -101,7 +88,7 @@ loopTail:
     STA number, X   ; store tens + ones into byte
 
     INX             ; increment byte index
-    CMP number_size ; compare to total amount of bytes to process
+    CPX number_size ; compare to total amount of bytes to process
     BNE loop        ; keep looping while index is less than amount of bytes to process
 
 end:
