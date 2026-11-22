@@ -58,10 +58,12 @@ CURSOR_PALETTE = $01;
         DEBUG_COIN_STATE  = $08      ; Debug (Add coins)
 
     flags: .res 1
-        PAUSED_FLAG     = %00000001  ; bit 0 = paused
-        BUILD_MENU_FLAG = %00000010  ; bit 1 = build mode
-        BUILD_FLAG      = %00000100  ; bit 2 = is building flag
-        SELECTING_FLAG  = %00001000  ; bit 3 = selecting area
+        PAUSED_FLAG      = %00000001  ; bit 0 = paused
+        BUILD_MENU_FLAG  = %00000010  ; bit 1 = build mode
+        IS_BUILDING_FLAG = %00000100  ; bit 2 = is building flag
+        BUILD_FLAG       = %00001000  ; bit 3 = build selcted item
+        ROTATE_FLAG      = %00010000  ; bit 4 = rotate selected item
+        SELECTING_FLAG   = %00100000  ; bit 5 = selecting area
     
 
 
@@ -410,7 +412,7 @@ end:                               ; End of the HandlePaused logic
 
 .proc BuildMode                    ; Logic for handling the Build Mode
     LDA flags
-    AND #BUILD_FLAG
+    AND #IS_BUILDING_FLAG
     BEQ browseMenu                 ; not building so move the cursor in the HUD
     JSR Build
     RTS
@@ -505,12 +507,13 @@ readLoop:                          ; Loops 8 times to cover all input bits
     AND #BUILD_MENU_FLAG
     BEQ checkB                ; build menu closed
     LDA flags
-    AND #BUILD_FLAG
+    AND #IS_BUILDING_FLAG
     BNE checkB                ; is building is set
 
     LDA flags
-    ORA #BUILD_FLAG           ; set is building 
+    ORA #IS_BUILDING_FLAG           ; set is building 
     STA flags
+    JSR ResetCursor           ; Reset the cursor to the grid
 
 checkB:                            ; Checks B button
     LDA buttons         ; Load button input
@@ -542,7 +545,7 @@ checkSelect:                       ; Checks SELECT button
     ; Toggle build flag
     LDA flags        ; Load flags
     EOR #BUILD_MENU_FLAG  ; Flip bit 1 (Build flag)
-    AND #(BUILD_FLAG ^ $FF)   ; disable is building flag 
+    AND #(IS_BUILDING_FLAG ^ $FF)   ; disable is building flag 
     STA flags        ; Save new state
     LDA #DEPOSIT_STATE ; Set cursor to deposit
     STA selected_building_mode ; Store the new flag 
@@ -553,7 +556,7 @@ checkBuildState:                        ; Checks the build state before continue
     AND #BUILD_MENU_FLAG
     BEQ checkUp             ; menu closed, movement allowed
     LDA flags
-    AND #BUILD_FLAG
+    AND #IS_BUILDING_FLAG
     BEQ inputDone           ; in menu but not building, no grid movement
 
 checkUp:                           ; Checks UP button
