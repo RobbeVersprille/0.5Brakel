@@ -268,7 +268,7 @@ attributeLoop:
 
 .proc InitCursor                   ; Init the cursor attribute and pallet in the OAM_copy and sets its location to the center of the screen
     ; start in the center of the tile grid
-    JSR ResetCursor
+    JSR ResetCursorPos
 
     LDX #START_ADDRESS_CURSOR_OAM
     INX
@@ -282,7 +282,7 @@ attributeLoop:
     RTS
 .endproc
 
-.proc UpdateCursor               ; Updates the cursor x an y pos in the oam copy for its position on the grid
+.proc UpdateCursor                 ; Updates the cursor x an y pos in the oam copy for its position on the grid
     LDX #START_ADDRESS_CURSOR_OAM
     LDA cursor_y ; y index of cursor location
     ASL  ; multiply by 2
@@ -315,6 +315,7 @@ attributeLoop:
     INX
     RTS
 .endproc
+
 .proc UpdateCursorInHud            ; Updates the cursor x an y pos in the oam copy for its position on in the HUD
     LDA selected_building_mode     ; Get current seltected index in HUD
     ASL                            ; Multiply by 2
@@ -341,7 +342,8 @@ attributeLoop:
     JSR UpdateCursor
     RTS
 .endproc
-.proc ResetCursor
+
+.proc ResetCursorPos                  ; Resets the cursor position
     LDA #$0B
     STA cursor_y      ; Reset cursor_y to center ich of screen
     LDA #$0F
@@ -349,6 +351,11 @@ attributeLoop:
     RTS
 .endproc
 
+.proc SelectCursorSprite            ; Select the correct cursor sprite based on current game flags
+    
+    
+    RTS
+.endproc
 
 .proc HandlePaused                 ; Handles/Updates the paused state of the game
     LDA buttons         ; Load button input
@@ -375,12 +382,12 @@ attributeLoop:
     JSR play_sfx
     JMP end
 
-now_paused:
-    LDA #0              ; now paused -> SFX 0
-    JSR play_sfx
+    now_paused:
+        LDA #0              ; now paused -> SFX 0
+        JSR play_sfx    
 
-end:                               ; End of the HandlePaused logic
-    RTS
+    end:                               ; End of the HandlePaused logic
+        RTS
 .endproc
 
 ;*********************************************************
@@ -423,54 +430,53 @@ end:                               ; End of the HandlePaused logic
     RTS
 .endproc
 
-
-.proc HudMode                    ; Logic for handling the Build Mode
+.proc HudMode                      ; Logic for handling the Build Mode
     LDA flags
     AND #IS_BUILDING_FLAG
     BEQ browseMenu                 ; not building so move the cursor in the HUD
     JSR Build
     RTS
 
-browseMenu:                        ; Start of the logic for cursor movement inside the HUD
-    LDA buttons
-    AND #LEFT_BUTTON
-    BEQ checkRight                 ; not pressed
-    LDA old_buttons
-    AND #LEFT_BUTTON
-    BNE checkRight                 ; held, not a new press so jump
-    LDA selected_building_mode
-    CMP #DEPOSIT_STATE
-    BEQ loopToBack                 ; At the first option loop back
-    DEC selected_building_mode
-    JMP checkRight                 ; Jump to avoid the loopback code
+    browseMenu:                       ; Start of the logic for cursor movement inside the HUD
+        LDA buttons
+        AND #LEFT_BUTTON
+        BEQ checkRight                 ; not pressed
+        LDA old_buttons
+        AND #LEFT_BUTTON
+        BNE checkRight                 ; held, not a new press so jump
+        LDA selected_building_mode
+        CMP #DEPOSIT_STATE
+        BEQ loopToBack                 ; At the first option loop back
+        DEC selected_building_mode
+        JMP checkRight                 ; Jump to avoid the loopback code
 
-loopToBack:                       ; Reset the selected building mode to #DEBUG_COIN_STATE (8 -> back)
-    LDA #DEBUG_COIN_STATE
-    STA selected_building_mode 
+    loopToBack:                       ; Reset the selected building mode to #DEBUG_COIN_STATE (8 -> back)
+        LDA #DEBUG_COIN_STATE
+        STA selected_building_mode 
 
-checkRight:                        ; The logic for Right cursor movement inside the HUD
-    LDA buttons
-    AND #RIGHT_BUTTON
-    BEQ skipRight               ; not pressed
-    LDA old_buttons
-    AND #RIGHT_BUTTON
-    BNE skipRight               ; held, not a new press so jump
-    LDA selected_building_mode
-    CMP #DEBUG_COIN_STATE
-    BEQ loopToFront               ; already at the last option 
-    INC selected_building_mode
-    JMP skipRight                ; Jump to avoid the loopback code
+    checkRight:                       ; The logic for Right cursor movement inside the HUD
+        LDA buttons
+        AND #RIGHT_BUTTON
+        BEQ skipRight               ; not pressed
+        LDA old_buttons
+        AND #RIGHT_BUTTON
+        BNE skipRight               ; held, not a new press so jump
+        LDA selected_building_mode
+        CMP #DEBUG_COIN_STATE
+        BEQ loopToFront               ; already at the last option 
+        INC selected_building_mode
+        JMP skipRight                ; Jump to avoid the loopback code
 
-loopToFront:                        ; Reset the selected building mode to #DEPOSIT_STATE (0 -> front)
-    LDA #DEPOSIT_STATE
-    STA selected_building_mode 
+    loopToFront:                      ; Reset the selected building mode to #DEPOSIT_STATE (0 -> front)
+        LDA #DEPOSIT_STATE
+        STA selected_building_mode 
 
-skipRight:                         ; Skip the logic for Right cursor movement inside the HUD
-    JSR UpdateCursorInHud          ; Updates the cursor to be on the correct Hud Button
-    RTS
+    skipRight:                        ; Skip the logic for Right cursor movement inside the HUD
+        JSR UpdateCursorInHud          ; Updates the cursor to be on the correct Hud Button
+        RTS
 .endproc
 
-.proc Rotate
+.proc Rotate                       ; Rotate logic
     LDA selected_building_mode
    
     CMP #DEPOSIT_STATE
@@ -509,11 +515,11 @@ skipRight:                         ; Skip the logic for Right cursor movement in
         RTS
 .endproc
 
-.proc Build                        ; Build logic
+.proc Build                        ; Build logic(does nothing rn)
     RTS
 .endproc
 
-.proc AreaSelectMode               ; Show the cursor on the grid and start the resource area selection
+.proc AreaSelectMode               ; AreaSelectLogic(does nothing rn)
     RTS
 .endproc
 
@@ -533,13 +539,13 @@ skipRight:                         ; Skip the logic for Right cursor movement in
     LDA #$00               
     STA buttons            ; Clearing old input
 
-readLoop:                          ; Loops 8 times to cover all input bits
-    LDA JOYPAD1              ; Read next bit
-    LSR A                  ; Put A in carry-flag
-    ROL buttons            ; Put carry-flag in buttons
+    readLoop:                          ; Loops 8 times to cover all input bits
+        LDA JOYPAD1              ; Read next bit
+        LSR A                  ; Put A in carry-flag
+        ROL buttons            ; Put carry-flag in buttons
 
-    DEX                    
-    BNE readLoop           ; Loop until X = 0
+        DEX                    
+        BNE readLoop           ; Loop until X = 0
 
     RTS                    ; Return to main
 .endproc
@@ -575,9 +581,9 @@ readLoop:                          ; Loops 8 times to cover all input bits
 
     SetIsBuilding:
         LDA flags
-        ORA #IS_BUILDING_FLAG           ; set is building 
+        ORA #IS_BUILDING_FLAG        ; set is building 
         STA flags
-        JSR ResetCursor           ; Reset the cursor to the grid
+        JSR ResetCursorPos           ; Reset the cursor to the grid
 
 checkB:                            ; Checks B button
     LDA buttons         ; Load button input
@@ -621,7 +627,7 @@ checkSelect:                       ; Checks SELECT button
     STA flags        ; Save new state
     LDA #DEPOSIT_STATE ; Set cursor to deposit
     STA selected_building_mode ; Store the new flag 
-    JSR ResetCursor
+    JSR ResetCursorPos
     
 checkBuildState:                        ; Checks the build state before continueing with the D-pad checks if in build mode skip the D-PAD checks here
     LDA flags
