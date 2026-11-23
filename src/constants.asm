@@ -51,8 +51,8 @@ MONEY_BYTES = 5
 
 ;; sprite palette enums
 .enum
-    SP_PAL_1
-    SP_PAL_2
+    CURSOR_PALETTE
+    GHOST_PALLETTE
     SP_PAL_3
     SP_PAL_4
 .endenum

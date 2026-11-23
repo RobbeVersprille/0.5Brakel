@@ -1,24 +1,22 @@
 ; Tom's Favourite NES Game
-.import InitConveyor
-.import ConveyorTick
-.import ConveyorUpload
+.include "constants.asm"
+
+.import InitConveyor, ConveyorTick, ConveyorUpload 
 .import PlaceConveyor                 ; write one conveyor tile (PPU address in A / X)      ONLY USE IN NMI
 .import RotateConveyor                ; turn the direction that PlaceConveyor uses
 .import RemoveConveyor                ; remove one conveyor tile (PPU address in A / X)     ONLY USE IN NMI
-
-.include "constants.asm"
+.importzp conveyor_dir                ; zp variable for conveyor direction
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
-.import ShowHud, InitHud
 .import InitMoney, InitNumbers
+.import ShowHud, InitHud, SelectableItemTable
 
 .setcpu "6502"
 
 ; Macros
 JOYPAD1 =  $4016; 
 START_ADDRESS_CURSOR_OAM = $00;
-CURSOR_PALETTE = $01;
 
 .segment "HEADER" ; Header is meestal 16 bytes        
     .byte "NES", $1A           ; Herkenningsbytes voor een NES-ROM
@@ -47,50 +45,52 @@ CURSOR_PALETTE = $01;
         RIGHT_BUTTON  = %00000001    ; bit 7 = Right    
     nmi_flag:    .res 1        ; set by the NMI, cleared by the main loop 
 
-    selected_building_mode: .res 1   ; Keeps track of the selected "building" (factory, depo, area, belt,....) 
-        DEPOSIT_STATE     = $00      ; bit 0 = Deposit
-        CONVEYER_STATE    = $01      ; bit 1 = Conveyer
-        AREA_SELECT_STATE = $02      ; bit 2 = Area Select
-        FACTORY_STATE     = $03      ; bit 3 = Factory     
-        REFINERY_STATE    = $04      ; bit 4 = Refinery      
-        COLLECTION_STATE  = $05      ; bit 5 = Collection     
-        PEOPLE_STATE      = $06      ; bit 6 = People 
-        DESTROY_STATE     = $07      ; bit 7 = Destroy
+    selected_building_mode: .res 1   ; Keeps track of the selected HUD element (factory, depo, area, belt,....) 
+        DEPOSIT_STATE     = $00      ; Deposit
+        CONVEYOR_STATE    = $01      ; Conveyor
+        AREA_SELECT_STATE = $02      ; Area Select
+        FACTORY_STATE     = $03      ; Factory     
+        REFINERY_STATE    = $04      ; Refinery      
+        COLLECTION_STATE  = $05      ; Collection     
+        PEOPLE_STATE      = $06      ; People 
+        DESTROY_STATE     = $07      ; Destroy
+        DEBUG_COIN_STATE  = $08      ; Debug (Add coins)
 
     flags: .res 1
-        PAUSED_FLAG     = %00000001  ; bit 0 = paused
-        BUILD_MENU_FLAG = %00000010  ; bit 1 = build mode
-        BUILD_FLAG      = %00000100  ; bit 2 = is building flag
-        SELECTING_FLAG  = %00001000  ; bit 3 = selecting area
+        PAUSED_FLAG      = %00000001  ; bit 0 = paused
+        BUILD_MENU_FLAG  = %00000010  ; bit 1 = build mode
+        IS_BUILDING_FLAG = %00000100  ; bit 2 = is building flag
+        BUILD_FLAG       = %00001000  ; bit 3 = build selcted item
+        ROTATE_FLAG      = %00010000  ; bit 4 = rotate selected item
+        SELECTING_FLAG   = %00100000  ; bit 5 = selecting area
     
 
 
 .segment "CODE"
 ;;code from the book
 ; FamiStudio config.
-FAMISTUDIO_CFG_EXTERNAL = 1
-FAMISTUDIO_CFG_DPCM_SUPPORT = 1
-FAMISTUDIO_CFG_SFX_SUPPORT = 1
-FAMISTUDIO_CFG_SFX_STREAMS = 2
-FAMISTUDIO_CFG_EQUALIZER = 1
-FAMISTUDIO_USE_VOLUME_TRACK = 1
-FAMISTUDIO_USE_PITCH_TRACK = 1
-FAMISTUDIO_USE_SLIDE_NOTES = 1
-FAMISTUDIO_USE_VIBRATO = 1
-FAMISTUDIO_USE_ARPEGGIO = 1
-FAMISTUDIO_CFG_SMOOTH_VIBRATO = 1
-FAMISTUDIO_USE_RELEASE_NOTES = 1
-FAMISTUDIO_DPCM_OFF = $e000
+    FAMISTUDIO_CFG_EXTERNAL = 1
+    FAMISTUDIO_CFG_DPCM_SUPPORT = 1
+    FAMISTUDIO_CFG_SFX_SUPPORT = 1
+    FAMISTUDIO_CFG_SFX_STREAMS = 2
+    FAMISTUDIO_CFG_EQUALIZER = 1
+    FAMISTUDIO_USE_VOLUME_TRACK = 1
+    FAMISTUDIO_USE_PITCH_TRACK = 1
+    FAMISTUDIO_USE_SLIDE_NOTES = 1
+    FAMISTUDIO_USE_VIBRATO = 1
+    FAMISTUDIO_USE_ARPEGGIO = 1
+    FAMISTUDIO_CFG_SMOOTH_VIBRATO = 1
+    FAMISTUDIO_USE_RELEASE_NOTES = 1
+    FAMISTUDIO_DPCM_OFF = $e000
 
-
-; CA65-specifc config.
-.define FAMISTUDIO_CA65_ZP_SEGMENT ZEROPAGE
-.define FAMISTUDIO_CA65_RAM_SEGMENT BSS
-.define FAMISTUDIO_CA65_CODE_SEGMENT CODE
-
-.include "famistudio_ca65.s"
-.include "Songs/BtnPressed_SFX.s"
-.include "Songs/Thibe_Track.s"
+    ; CA65-specifc config.
+    .define FAMISTUDIO_CA65_ZP_SEGMENT ZEROPAGE
+    .define FAMISTUDIO_CA65_RAM_SEGMENT BSS
+    .define FAMISTUDIO_CA65_CODE_SEGMENT CODE
+    
+    .include "famistudio_ca65.s"
+    .include "Songs/BtnPressed_SFX.s"
+    .include "Songs/Thibe_Track.s"
 ;;
 
 reset:                             ; Reset label
@@ -179,11 +179,11 @@ reset_scroll:
 
 
 .proc Main                         ; MAIN LOOP OF THE GAME
-waitNmi:
-    LDA nmi_flag                ; did the NMI run since the last frame?
-    BEQ waitNmi                 ; no: wait
-    LDA #$00                    ; yes: clear the flag
-    STA nmi_flag                ; for the next frame
+    waitNmi:
+        LDA nmi_flag                ; did the NMI run since the last frame?
+        BEQ waitNmi                 ; no: wait
+        LDA #$00                    ; yes: clear the flag
+        STA nmi_flag                ; for the next frame
     JSR ConveyorTick            ; once per frame
 
     JSR ReadController             ; Read controller input
@@ -197,13 +197,19 @@ waitNmi:
 
     LDA flags                      ; LOAD the flags
     AND #BUILD_MENU_FLAG           ; check bit for BUILD_MENU_FLAG of the flags is set
-    BNE skipBuildMenu              ; Game not in build mode -> Skip
-    JSR BuildMode                  ; Game in build mode jump to logic
+    BEQ skipHUDMode                ; Game not in HUD mode -> Skip
+    JSR HudMode                    ; Game in HUD mode jump to logic
 
-skipBuildMenu:                     ; Skip the build Mode logic
+skipHUDMode:                       ; Skip the HUD Mode logic
     LDA flags
-    AND #BUILD_MENU_FLAG ; check bit 1 of the flags is set
-    BNE skipAreaSelect ; Game not in area select mode
+    AND #ROTATE_FLAG               ; Check if Rotate flag is set
+    BEQ skipRotate                 ; Not Rotating
+    JSR Rotate
+
+skipRotate:
+    LDA flags
+    AND #SELECTING_FLAG ; check bit 1 of the flags is set
+    BEQ skipAreaSelect ; Game not in area select mode
     JSR AreaSelectMode ; Game in area select mode
 skipAreaSelect:                    ; Skip Area select Mode logic
 end:                               ; END of MAIN
@@ -264,10 +270,7 @@ attributeLoop:
 
 .proc InitCursor                   ; Init the cursor attribute and pallet in the OAM_copy and sets its location to the center of the screen
     ; start in the center of the tile grid
-    LDA #$0F
-    STA cursor_x
-    LDA #$0F - HUD_HEIGHT
-    STA cursor_y
+    JSR ResetCursorPos
 
     LDX #START_ADDRESS_CURSOR_OAM
     INX
@@ -281,19 +284,23 @@ attributeLoop:
     RTS
 .endproc
 
-.proc UpdateCursor               ; Updates the cursor x an y pos in the oam copy for its position on the grid
+.proc UpdateCursor                 ; Updates the cursor x an y pos in the oam copy for its position on the grid
     LDX #START_ADDRESS_CURSOR_OAM
     LDA cursor_y ; y index of cursor location
     ASL  ; multiply by 2
     ASL  ; multiply by 4 
     ASL  ; multiply by 8 (sprite size = 8 pixels)
     SEC
-    SBC #$01 ; minus 1 because yPos is delayed by 1 scan line
-    STA oam_copy, X
+    SBC #$01     ; minus 1 because yPos is delayed by 1 scan line
+    BCS storeY  ; No carry so not scan line 0;
+    LDA #$00     ; y index 0 gets drawn on scan line 1 
+    storeY:
+        STA oam_copy, X
     INX
 
-    INX ; Skip the pallet (set in init) (TODO implement ghost for building)
-    INX ; Skip the attributes (set in init) (TODO implement ghost for building)
+    JSR SelectCursorSpriteAndPallet ; setting byte 1 and 2
+    INX
+    
     LDA cursor_x 
     ASL  ; multiply by 2
     ASL  ; multiply by 4 
@@ -302,10 +309,114 @@ attributeLoop:
     INX
     RTS
 .endproc
-.proc UpdateCursorInHud            ; Updates the cursor x an y pos in the oam copy for its position on in the HUD
-    RTS
 
+.proc UpdateCursorInHud            ; Updates the cursor x an y pos in the oam copy for its position on in the HUD
+    LDA selected_building_mode     ; Get current seltected index in HUD
+    ASL                            ; Multiply by 2
+    CLC
+    ADC selected_building_mode     ; Add original index value to make it multiply by 3 (this to have the correct ofset for the SelectableItemTable which stores items in increments of 3 bytes)
+    TAX                            ; Transfer A to X to be used as an adress ofset
+    LDA SelectableItemTable, X     ; Select the data from the HUD SelectableItemTable
+    TAY                            ; Store the data in Y register
+
+    LSR
+    LSR
+    LSR
+    LSR
+    LSR                             ; Shift out x pos only keeping y pos (3 high bits)     
+    
+    CLC
+    ADC #HUD_POS_Y                   ; Add the Hud Y Pos
+
+    STA cursor_y                    ; Store Y pos in the cursor_y
+    TYA                             ; reload the data from the HUD SelectableItemTable stored in Y
+    AND #%00011111                  ; AND to keep only the lower 5 bits
+
+    STA cursor_x
+    JSR UpdateCursor
+    RTS
 .endproc
+
+.proc ResetCursorPos                  ; Resets the cursor position
+    LDA #$0B
+    STA cursor_y      ; Reset cursor_y to center ich of screen
+    LDA #$0F
+    STA cursor_x      ; Reset cursor_x to center ich of screen
+    RTS
+.endproc
+
+.proc SelectCursorSpriteAndPallet            ; Select the correct cursor sprite and pallet based on current game flags
+    ; if not IS_BUILDING_FLAG set sprite to cursor sprite skip al others
+    ; if build mode check which item is selected 
+    ; if cursor check cursor direction
+
+    LDA flags
+    AND #IS_BUILDING_FLAG
+    BNE checkBuildModes    ; is building so check which sprite to use 
+    
+    LDA #CURSOR_TILE
+    STA oam_copy, X
+    INX
+    LDA #CURSOR_PALETTE
+    STA oam_copy, X
+    JMP end
+
+    checkBuildModes:
+        LDA selected_building_mode
+   
+        CMP #DEPOSIT_STATE
+        BEQ SetSpriteAsDeposit
+
+        CMP #CONVEYOR_STATE       
+        BEQ SetSpriteAsConveyor
+
+        CMP #FACTORY_STATE
+        BEQ SetSpriteAsFactory
+
+        CMP #REFINERY_STATE
+        BEQ SetSpriteAsRefinery
+
+        CMP #COLLECTION_STATE
+        BEQ SetSpriteAsCollection
+
+        LDA #PLACEHOLDER_TILE
+        STA oam_copy, X
+        JMP endBuildModes                ; No valid Mode
+
+
+
+        SetSpriteAsDeposit:                   ; Set Sprite as Deposit
+            LDA #PLACEHOLDER_TILE
+            STA oam_copy, X
+            JMP endBuildModes        
+        SetSpriteAsConveyor:                  ; Set Sprite as conveyors
+            LDA #CONVEYER_RIGHT
+            CLC
+            ADC conveyor_dir
+            STA oam_copy, X
+            JMP endBuildModes
+        SetSpriteAsFactory:                   ; Set Sprite as factory
+            LDA #PLACEHOLDER_TILE
+            STA oam_copy, X
+            JMP endBuildModes
+        SetSpriteAsRefinery:                  ; Set Sprite as refinery
+            LDA #PLACEHOLDER_TILE
+            STA oam_copy, X
+            JMP endBuildModes
+        SetSpriteAsCollection:                ; Set Sprite as collection
+            LDA #PLACEHOLDER_TILE
+            STA oam_copy, X
+            JMP endBuildModes
+
+    endBuildModes:    
+        INX
+        LDA #GHOST_PALLETTE
+        STA oam_copy, X
+        JMP end
+    end:
+        RTS
+.endproc
+
 .proc HandlePaused                 ; Handles/Updates the paused state of the game
     LDA buttons         ; Load button input
     AND #START_BUTTON   ; Isolate bit 4, START-Button
@@ -331,12 +442,12 @@ attributeLoop:
     JSR play_sfx
     JMP end
 
-now_paused:
-    LDA #0              ; now paused -> SFX 0
-    JSR play_sfx
+    now_paused:
+        LDA #0              ; now paused -> SFX 0
+        JSR play_sfx    
 
-end:                               ; End of the HandlePaused logic
-    RTS
+    end:                               ; End of the HandlePaused logic
+        RTS
 .endproc
 
 ;*********************************************************
@@ -379,58 +490,96 @@ end:                               ; End of the HandlePaused logic
     RTS
 .endproc
 
-
-.proc BuildMode                    ; Logic for handling the Build Mode
+.proc HudMode                      ; Logic for handling the Build Mode
     LDA flags
-    AND #BUILD_FLAG
+    AND #IS_BUILDING_FLAG
     BEQ browseMenu                 ; not building so move the cursor in the HUD
     JSR Build
     RTS
 
-browseMenu:                        ; Start of the logic for cursor movement inside the HUD
-    LDA buttons
-    AND #LEFT_BUTTON
-    BEQ checkRight                 ; not pressed
-    LDA old_buttons
-    AND #LEFT_BUTTON
-    BNE checkRight                 ; held, not a new press so jump
+    browseMenu:                       ; Start of the logic for cursor movement inside the HUD
+        LDA buttons
+        AND #LEFT_BUTTON
+        BEQ checkRight                 ; not pressed
+        LDA old_buttons
+        AND #LEFT_BUTTON
+        BNE checkRight                 ; held, not a new press so jump
+        LDA selected_building_mode
+        CMP #DEPOSIT_STATE
+        BEQ loopToBack                 ; At the first option loop back
+        DEC selected_building_mode
+        JMP checkRight                 ; Jump to avoid the loopback code
+
+    loopToBack:                       ; Reset the selected building mode to #DEBUG_COIN_STATE (8 -> back)
+        LDA #DEBUG_COIN_STATE
+        STA selected_building_mode 
+
+    checkRight:                       ; The logic for Right cursor movement inside the HUD
+        LDA buttons
+        AND #RIGHT_BUTTON
+        BEQ skipRight               ; not pressed
+        LDA old_buttons
+        AND #RIGHT_BUTTON
+        BNE skipRight               ; held, not a new press so jump
+        LDA selected_building_mode
+        CMP #DEBUG_COIN_STATE
+        BEQ loopToFront               ; already at the last option 
+        INC selected_building_mode
+        JMP skipRight                ; Jump to avoid the loopback code
+
+    loopToFront:                      ; Reset the selected building mode to #DEPOSIT_STATE (0 -> front)
+        LDA #DEPOSIT_STATE
+        STA selected_building_mode 
+
+    skipRight:                        ; Skip the logic for Right cursor movement inside the HUD
+        JSR UpdateCursorInHud          ; Updates the cursor to be on the correct Hud Button
+        RTS
+.endproc
+
+.proc Rotate                       ; Rotate logic
     LDA selected_building_mode
+   
     CMP #DEPOSIT_STATE
-    BEQ loopToBack                 ; At the first option loop back
-    DEC selected_building_mode
-    JMP checkRight                 ; Jump to avoid the loopback code
+    BEQ RotDeposit
 
-loopToFront:                       ; Reset the selected building mode to #DESTROY_STATE (7 - back)
-    LDA #DESTROY_STATE
-    STA selected_building_mode 
+    CMP #CONVEYOR_STATE       
+    BEQ RotConveyor
 
-checkRight:                        ; The logic for Right cursor movement inside the HUD
-    LDA buttons
-    AND #RIGHT_BUTTON
-    BEQ skipRight               ; not pressed
-    LDA old_buttons
-    AND #RIGHT_BUTTON
-    BNE skipRight               ; held, not a new press so jump
-    LDA selected_building_mode
-    CMP #DESTROY_STATE
-    BEQ loopToBack               ; already at the last option 
-    DEC selected_building_mode
-    JMP skipRight                ; Jump to avoid the loopback code
+    CMP #FACTORY_STATE
+    BEQ RotFactory
 
-loopToBack:                        ; Reset the selected building mode to #DEPOSIT_STATE (0 - front)
-    LDA #DEPOSIT_STATE
-    STA selected_building_mode 
+    CMP #REFINERY_STATE
+    BEQ RotRefinery
 
-skipRight:                         ; Skip the logic for Right cursor movement inside the HUD
-    JSR UpdateCursorInHud          ; Updates the cursor to be on the correct Hud Button
+    CMP #COLLECTION_STATE
+    BEQ RotCollection
+
+    JMP EndRotate                ; other modes: nothing to rotate
+
+    RotDeposit:                   ; Rotate logic for Deposit
+        JMP EndRotate
+    RotConveyor:                  ; Rotate logic for conveyors
+        JSR RotateConveyor
+        JMP EndRotate
+    RotFactory:                   ; Rotate logic for factory
+        JMP EndRotate
+    RotRefinery:                  ; Rotate logic for refinery
+        JMP EndRotate
+    RotCollection:                ; Rotate logic for collection
+        JMP EndRotate
+
+    EndRotate:
+        LDA flags
+        AND #(ROTATE_FLAG ^ $FF)
+        STA flags                ;Disable Rotate Flag
+        RTS
+.endproc
+
+.proc Build                        ; Build logic(does nothing rn)
     RTS
 .endproc
 
-.proc Build                        ; Build logic
-    RTS
-.endproc
-
-.proc AreaSelectMode               ; Show the cursor on the grid and start the resource area selection
+.proc AreaSelectMode               ; AreaSelectLogic(does nothing rn)
     RTS
 .endproc
 
@@ -450,13 +599,13 @@ skipRight:                         ; Skip the logic for Right cursor movement in
     LDA #$00               
     STA buttons            ; Clearing old input
 
-readLoop:                          ; Loops 8 times to cover all input bits
-    LDA JOYPAD1              ; Read next bit
-    LSR A                  ; Put A in carry-flag
-    ROL buttons            ; Put carry-flag in buttons
+    readLoop:                          ; Loops 8 times to cover all input bits
+        LDA JOYPAD1              ; Read next bit
+        LSR A                  ; Put A in carry-flag
+        ROL buttons            ; Put carry-flag in buttons
 
-    DEX                    
-    BNE readLoop           ; Loop until X = 0
+        DEX                    
+        BNE readLoop           ; Loop until X = 0
 
     RTS                    ; Return to main
 .endproc
@@ -475,14 +624,26 @@ readLoop:                          ; Loops 8 times to cover all input bits
     ; A-BUTTON CODE NEW PRESS:
     LDA flags
     AND #BUILD_MENU_FLAG
-    BEQ checkB                ; build menu closed
+    BEQ checkB                ; Not in build menu jet
+    
     LDA flags
-    AND #BUILD_FLAG
-    BNE checkB                ; is building is set
+    AND #IS_BUILDING_FLAG
+    BEQ SetIsBuilding         ; set is building
 
     LDA flags
-    ORA #BUILD_FLAG           ; set is building 
+    AND #BUILD_FLAG
+    BNE checkB                ; Build already set
+
+    LDA flags
+    ORA #BUILD_FLAG           ; set build
     STA flags
+    JMP checkB                ; Skip SetIsBuilding   
+
+    SetIsBuilding:
+        LDA flags
+        ORA #IS_BUILDING_FLAG        ; set is building 
+        STA flags
+        JSR ResetCursorPos           ; Reset the cursor to the grid
 
 checkB:                            ; Checks B button
     LDA buttons         ; Load button input
@@ -496,6 +657,14 @@ checkB:                            ; Checks B button
     BNE checkSelect     ; If B was pressed, skip new B-Button press code and check Select-Button
 
     ; B-BUTTON CODE NEW PRESS:
+
+    LDA flags
+    AND #IS_BUILDING_FLAG
+    BEQ checkSelect         ; Is building not set
+
+    LDA flags
+    ORA #ROTATE_FLAG
+    STA flags
 
 
 checkSelect:                       ; Checks SELECT button
@@ -514,17 +683,18 @@ checkSelect:                       ; Checks SELECT button
     ; Toggle build flag
     LDA flags        ; Load flags
     EOR #BUILD_MENU_FLAG  ; Flip bit 1 (Build flag)
-    AND #(BUILD_FLAG ^ $FF)   ; disable is building flag 
+    AND #(IS_BUILDING_FLAG ^ $FF)   ; disable is building flag 
     STA flags        ; Save new state
     LDA #DEPOSIT_STATE ; Set cursor to deposit
     STA selected_building_mode ; Store the new flag 
+    JSR ResetCursorPos
     
 checkBuildState:                        ; Checks the build state before continueing with the D-pad checks if in build mode skip the D-PAD checks here
     LDA flags
     AND #BUILD_MENU_FLAG
     BEQ checkUp             ; menu closed, movement allowed
     LDA flags
-    AND #BUILD_FLAG
+    AND #IS_BUILDING_FLAG
     BEQ inputDone           ; in menu but not building, no grid movement
 
 checkUp:                           ; Checks UP button
@@ -541,7 +711,7 @@ checkUp:                           ; Checks UP button
     ; UP-BUTTON CODE NEW PRESS:
     DEC cursor_y                          ; Move up one tile
     BPL checkDown                         ; Branch if not 0 - 1 happend(cursor_y still >= 0)
-    LDA #(SCREEN_HEIGHT - HUD_HEIGHT)     ; Went below 0, wrap to the last grid row
+    LDA #(SCREEN_HEIGHT - HUD_HEIGHT - 1)     ; Went below 0, wrap to the last grid row
     STA cursor_y
 
 checkDown:                         ; Checks DOWN button
@@ -605,6 +775,73 @@ inputDone:                         ; END of input checks
     RTS ; Return to Main
 .endproc
 
+.proc HandleBuild
+    LDA flags
+    AND #BUILD_FLAG
+    BEQ SkipBuild               ; BUILD NOT SET
+
+    LDA selected_building_mode
+   
+    CMP #DEPOSIT_STATE
+    BEQ BuildDeposit
+
+    CMP #CONVEYOR_STATE       
+    BEQ BuildConveyor
+
+    CMP #FACTORY_STATE
+    BEQ BuildFactory
+
+    CMP #REFINERY_STATE
+    BEQ BuildRefinery
+
+    CMP #COLLECTION_STATE
+    BEQ BuildCollection
+
+    JMP EndBuild                ; other modes: nothing to build
+
+BuildDeposit:                   ; Build logic for Deposit
+    JMP EndBuild
+
+BuildConveyor:                  ; Build logic for conveyors
+    LDA cursor_y
+    LSR
+    LSR
+    LSR                         ; y / 8
+    CLC
+    ADC #>NAMETABLE_0           ; + $20 (high byte of NAMETABLE_0)
+    TAX                         ; X = high byte
+
+    LDA cursor_y
+    AND #%00000111              ; y mod 8
+    ASL
+    ASL
+    ASL
+    ASL
+    ASL                         ; * 32
+    ORA cursor_x                ; A = low byte
+    JSR PlaceConveyor
+    JMP EndBuild
+
+BuildFactory:                   ; Build logic for factory
+    JMP EndBuild
+
+BuildRefinery:                  ; Build logic for refinery
+    JMP EndBuild
+
+BuildCollection:                ; Build logic for collection
+    JMP EndBuild
+
+EndBuild:                       ; Clear the build flag
+    LDA flags
+    AND #(BUILD_FLAG ^ $FF)
+    STA flags
+
+SkipBuild:
+    RTS
+.endproc
+
+
+
 ; INTERRUPTROUTINES
 nmi:                               ; NMI INTERUPT
     PHA                         ; save A
@@ -613,8 +850,9 @@ nmi:                               ; NMI INTERUPT
     TYA                         ; save Y
     PHA                         ; ...
 
-    JSR TransferOamData            ; Transfer the OAM_Copy to the PPU
-
+    JSR TransferOamData         ; Transfer the OAM_Copy to the PPU
+    JSR HandleBuild             ; Handles the building of selected item
+    
     JSR ConveyorUpload          ; palette writes, returns PPUCTRL bit 4 in A
     ORA #%10000000              ; PPUCTRL bit 7: keep NMI enabled (OR in your other PPUCTRL bits)
     STA PPU_CTRL                ; must come after the palette writes
