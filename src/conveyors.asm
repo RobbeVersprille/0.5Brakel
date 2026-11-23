@@ -40,6 +40,7 @@
 .setcpu "6502"                        ; target CPU of this file
 
 .import PaletteData                   ; palette bytes from chr.asm
+.import oam_copy                      ; sprite buffer from oam.asm (sent to the PPU by TransferOamData)
 
 .export PlaceConveyor                 ; make visible to other files
 .export RotateConveyor                ; make visible to other files
@@ -60,9 +61,7 @@ CONVEYOR_PALETTE_LOW = $05            ; low byte of $3F05; colour 2 is the next 
 
 ; Items (sprites that ride on the conveyors)
 MAX_ITEMS = 16                        ; item slots (hardware: 64 sprites, 8 per scanline)
-ITEM_OAM_START = $00                  ; first OAM byte used by the items (multiple of 4)
 ITEM_HIDDEN_Y = $F0                   ; OAM y value that hides a sprite
-OAM_SHADOW = $0200                    ; RAM page that is sent to OAM by $4014
 
 .segment "ZEROPAGE"                   ; variables private to this file
     conveyor_ptr: .res 2              ; address of the tile being edited (low, high)
@@ -140,7 +139,7 @@ initLoop:
     STA item_dy,X                     ; not moving vertically
     LDA #ITEM_HIDDEN_Y                ; park the item below the visible screen
     STA item_y,X                      ; y = hidden
-    STA OAM_SHADOW + ITEM_OAM_START,Y ; hide its sprite too
+    STA oam_copy + OAM_ITEMS_START,Y  ; hide its sprite too (items own OAM_ITEMS_START.., never the cursor)
     INY                               ; next sprite is 4 bytes further
     INY                               ; ...
     INY                               ; ...
@@ -177,7 +176,7 @@ done:
 
 ; ---------------------------------------------------------------------
 ; ConveyorMoveItems - add each item's speed to its position and copy the
-; position to the OAM shadow. A parked or blocked item has speed 0.
+; position to its sprite in oam_copy. A parked or blocked item has speed 0.
 ; ---------------------------------------------------------------------
 .proc ConveyorMoveItems
     LDX #$00                          ; X = item index
@@ -187,12 +186,12 @@ itemLoop:
     CLC                               ; clear carry before adding
     ADC item_dx,X                     ; add 0, +1 or -1
     STA item_x,X                      ; save new x
-    STA OAM_SHADOW + ITEM_OAM_START + 3,Y ; sprite x byte
+    STA oam_copy + OAM_ITEMS_START + 3,Y ; sprite x byte
     LDA item_y,X                      ; current y
     CLC                               ; clear carry before adding
     ADC item_dy,X                     ; add 0, +1 or -1
     STA item_y,X                      ; save new y
-    STA OAM_SHADOW + ITEM_OAM_START,Y ; sprite y byte
+    STA oam_copy + OAM_ITEMS_START,Y  ; sprite y byte
 
     ; TODO (push policy): count the pixels moved inside the cell; at the end
     ;      of the cell the conveyor PUSHES the item into the next cell:
