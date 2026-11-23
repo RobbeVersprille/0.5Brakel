@@ -314,7 +314,7 @@ attributeLoop:
     ADC selected_building_mode     ; Add original index value to make it multiply by 3 (this to have the correct ofset for the SelectableItemTable which stores items in increments of 3 bytes)
     TAX                            ; Transfer A to X to be used as an adress ofset
     LDA SelectableItemTable, X     ; Select the data from the HUD SelectableItemTable
-    STA temp                       ; Store the data in a temp value 
+    TAY                            ; Store the data in Y register
 
     LSR
     LSR
@@ -326,7 +326,7 @@ attributeLoop:
     ADC #HUD_POS_Y                   ; Add the Hud Y Pos
 
     STA cursor_y                    ; Store Y pos in the cursor_y
-    LDA temp                        ; reload the data from the HUD SelectableItemTable
+    TYA                             ; reload the data from the HUD SelectableItemTable stored in Y
     AND #%00011111                  ; AND to keep only the lower 5 bits
 
     STA cursor_x
