@@ -15,6 +15,7 @@
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
+.import InitMoney, InitNumbers
 .import ShowHud, InitHud, SelectableItemTable
 
 .setcpu "6502"
@@ -134,6 +135,8 @@ clearOam:
     JSR InitConveyor            ; conveyor animation and items start from step 0
     JSR InitHud
     JSR InitFactory
+    JSR InitMoney
+    JSR InitNumbers
 
     ;; code from the book
     LDA #1
@@ -157,9 +160,9 @@ vblank2:                           ; second vblank wait so the PPU is fully warm
     STA nmi_flag                ; no NMI has happened yet
 
     ; Rendering is still off, so the PPU may be written at any time
-    JSR LoadPalette                ; Loading the pallet data into memory
-    JSR ClearNametable          ; empty tiles + attribute table
-    
+    JSR LoadPalette     ; Loading the pallet data into memory
+    JSR ClearNametable  ; empty tiles + attribute table
+
     JSR ShowHud
 
 enable_rendering:
@@ -327,7 +330,7 @@ attributeLoop:
     ADC selected_building_mode     ; Add original index value to make it multiply by 3 (this to have the correct ofset for the SelectableItemTable which stores items in increments of 3 bytes)
     TAX                            ; Transfer A to X to be used as an adress ofset
     LDA SelectableItemTable, X     ; Select the data from the HUD SelectableItemTable
-    STA temp                       ; Store the data in a temp value 
+    TAY                            ; Store the data in Y register
 
     LSR
     LSR
@@ -339,7 +342,7 @@ attributeLoop:
     ADC #HUD_POS_Y                   ; Add the Hud Y Pos
 
     STA cursor_y                    ; Store Y pos in the cursor_y
-    LDA temp                        ; reload the data from the HUD SelectableItemTable
+    TYA                             ; reload the data from the HUD SelectableItemTable stored in Y
     AND #%00011111                  ; AND to keep only the lower 5 bits
 
     STA cursor_x
