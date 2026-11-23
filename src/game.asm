@@ -111,8 +111,8 @@ vblank2:                           ; second vblank wait so the PPU is fully warm
     STA nmi_flag                ; no NMI has happened yet
 
     ; Rendering is still off, so the PPU may be written at any time
-    JSR LoadPalette                ; Loading the pallet data into memory
-    JSR ClearNametable          ; empty tiles + attribute table
+    JSR LoadPalette     ; Loading the pallet data into memory
+    JSR ClearNametable  ; empty tiles + attribute table
 
     JSR ShowHud
 

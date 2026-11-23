@@ -49,11 +49,12 @@ NumberVariablesEnd:
     STA NumberVariables, X                      ; init variable byte at index X
     INX                                         ; increment index
     CPX NumberVariablesEnd - NumberVariables    ; compare index to amount of bytes to initialise
-    BNE @Mloop                                   ; keep looping if index is still less than total bytes needed to initialise
+    BNE @Mloop                                  ; keep looping if index is still less than total bytes needed to initialise
 
     RTS
 .endproc
 
+;; TAKEN FROM BOOK, THEY DO RANDOM SHIT
 ;; converts the number in the number variable to decimal mode
 ;; @param number: the number to convert
 ;; @param number_size: the total amount of bytes number contains
