@@ -7,6 +7,7 @@
 ;
 ; 
 ; TODO: rotation in a separate thing see: robbe's code
+; TODO: steal more code from Robbe
 
 
 
@@ -27,6 +28,7 @@ ITEM_FOOD = $06                 ;Food item ID
 
 ;factory tile for drawing factory on background
 FACTORY_TILE_COUNT = 6          ;Total number of factory tiles to draw
+
 
 .segment "ZEROPAGE"          ; Zero page variables
 
@@ -66,6 +68,15 @@ factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, pa
 .segment "CODE"              ; Code segment (hence the name)
 
 .proc InitFactory           ; Initialize factory
+
+    BIT $2002                   ; Reset PPU address latch
+    LDA #$3F                    ; Palette RAM high byte
+    STA PPU_ADDR                   ; Set PPU address high byte
+    LDA #$00                    ; Palette RAM low byte
+    STA PPU_ADDR                   ; Set PPU address low byte
+
+    LDX #$00                    ; Start at palette byte 0
+
     LDX #$00                     ; Start at index zero
     LDA #$00                     ; Set everything to zero with this value
 
@@ -179,6 +190,9 @@ factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, pa
 .endproc
 
 .proc FactoryDraw           ; Draw factory (background)
+
+
+
     LDA #FACTORY_TILE
     LDA factory_y, X                 
     LSR A                            ; divide by 2
