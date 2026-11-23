@@ -9,6 +9,7 @@
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
+.import InitMoney, InitNumbers
 .import ShowHud, InitHud, SelectableItemTable
 
 .setcpu "6502"
@@ -127,6 +128,8 @@ clearOam:
     JSR InitCursor
     JSR InitConveyor            ; conveyor animation and items start from step 0
     JSR InitHud
+    JSR InitMoney
+    JSR InitNumbers
 
     ;; code from the book
     LDA #1
@@ -148,9 +151,9 @@ vblank2:                           ; second vblank wait so the PPU is fully warm
     STA nmi_flag                ; no NMI has happened yet
 
     ; Rendering is still off, so the PPU may be written at any time
-    JSR LoadPalette                ; Loading the pallet data into memory
-    JSR ClearNametable          ; empty tiles + attribute table
-    
+    JSR LoadPalette     ; Loading the pallet data into memory
+    JSR ClearNametable  ; empty tiles + attribute table
+
     JSR ShowHud
 
 enable_rendering:
