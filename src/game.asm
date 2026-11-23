@@ -149,6 +149,8 @@ wait_vblank:                       ; Wait for the PPU to start
     BIT PPU_STATUS        ; Reads the PPU-status; bit 7 = VBlank on/off
     BPL wait_vblank ; Loop util bit 7 = nul (negative bit)
 
+    
+
 vblank2:                           ; second vblank wait so the PPU is fully warmed up
     BIT PPU_STATUS
     BPL vblank2

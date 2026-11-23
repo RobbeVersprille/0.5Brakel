@@ -78,7 +78,7 @@ PaletteData:
     .byte $1C,$3A,$79,$F5,$CB,$96,$FE,$7C,$1C,$26,$47,$8F,$BF,$FE,$FE,$7C ; Logs
     .byte $0C,$5E,$3B,$5F,$A6,$84,$48,$30,$0C,$52,$35,$79,$FE,$FC,$78,$30 ; Stone
     .byte $FF,$7E,$42,$81,$81,$66,$18,$7E,$81,$42,$7E,$FF,$FF,$7E,$18,$7E ; DUVEL
-    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$00,$00,$00,$00,$00,$00,$00 ; Factory
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF ; Factory
     
     .byte $18,$18,$4E,$39,$08,$14,$14,$12,$00,$00,$77,$77,$00,$00,$00,$36   ; worker tile
 

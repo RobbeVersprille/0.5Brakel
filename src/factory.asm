@@ -40,6 +40,7 @@ factory_rows_left: .res 1
 
 factory_tile_x: .res 1                       ; Reserve 1 byte for factory tile X position
 factory_tile_y: .res 1                       ; Reserve 1 byte for factory tile Y position
+factory_dir: .res 1                          ; Direction of the factory
 
 .segment "BSS"
 
@@ -100,17 +101,10 @@ factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, pa
     STA factory_width, X                ; Reset factory width
     STA factory_height, X               ; Reset factory height
 
-
-
     INX                          ; Move to next factory
     CPX #MAX_FACTORIES           ; Check if all factories were initialized
     BNE factoryInitLoop          ; Repeat if more factories remain
 
-    ; LDX #$00                    ; Select factory 0
-    ; LDA #$0A                    ; X position = 10
-    ; STA factory_x, X            ; Save X position
-    ; LDA #$08                    ; Y position = 8
-    ; STA factory_y, X            ; Save Y position
     RTS                          ; Return from subroutine
 .endproc                     ; End subroutine
 
@@ -190,8 +184,6 @@ factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, pa
 .endproc
 
 .proc FactoryDraw           ; Draw factory (background)
-
-
 
     LDA #FACTORY_TILE
     LDA factory_y, X                 
