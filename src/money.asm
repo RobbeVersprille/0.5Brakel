@@ -79,19 +79,21 @@ end:
 
 .endproc
 
-;; TODO:
-;; THIS FUNCTION DOES NOT WORK DONT USE!!!!
-;; 
 ;; subtracts a value from money variable
 ;; this keeps every byte between [0-99]
 ;; @param A: value to sub (THIS MUST BE A VALUE IN [0-99]!!!)
 ;; @param X: add offset (if you want to sub 1000 => A = 10, X = 1)
 ;; registers used: A, X
 .proc SubMoney
+    LDY money, X    ; load money in Y
+    STA money, X    ; store value to add in the money
+    TYA             ; load money in Y
+
     SEC             ; set carry for normal subtraction
     SBC money, X    ; subtract value at byte index X
+
     STA money, X    ; store value back
-    BCC end         ; if value did not go below 0, go to end
+    BCS end         ; if value did not go below 0, go to end
 
     ADC #99         ; add 100 (99 + c as carry is always set here) to the underflowed value
     STA money, X    ; store value back into money
@@ -101,8 +103,8 @@ end:
     CMP MONEY_BYTES ; check if byte index is still valid (< MONEY_BYTES)
     BEQ end         ; if byte index is not valid, go to end
 
-    DEC money, X        ; decrement next byte
-    BCS @handleUnderflow ; if the byte underflowed, decrement next byte
+    DEC money, X            ; decrement next byte
+    BCS @handleUnderflow    ; if the byte underflowed, decrement next byte
  
 end:
     RTS
