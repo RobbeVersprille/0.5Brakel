@@ -1,10 +1,10 @@
 ; PUBLIC FUNCTIONS:
-;   FactoryInit - call once on reset to initialize factory variables
-;   FactoryUpdate - call from main loop
+;   InitFactory - call once on reset to initialize factory variables
+;   UpdateFactory - call from main loop
 ;   PlaceFactory - IN: A = low byte of tile address, X = high byte
 ;   DestroyFactory - IN: A = low byte of tile address, X = high byte
 ;   RotateFactory - erm is still bugged but yk.
-;
+;   TakeFactoryInput - IN: A = item ID, incoming sprites are deleted and added to inventory.
 ; 
 ; TODO: rotation in a separate thing see: robbe's code
 ; TODO: steal more code from Robbe
@@ -15,9 +15,11 @@
 
 .import TransferOamData, oam_copy ; importing OAM
 .export PlaceFactory, DestroyFactory, RotateFactory, InitFactory, UpdateFactory, TakeFactoryInput
+.export factory_state       ;
 MAX_FACTORIES = 16              ;Set a limit for the number of factories in the game
 
 ;factory inventory
+MAX_INVENTORY = 255             ;Limit of 1 item that a factory can hold
 ITEM_WOOD = $00                 ;Wood item ID
 ITEM_STONE = $01                ;Stone item ID
 ITEM_WHEAT = $02                ;Wheat item ID
@@ -58,7 +60,7 @@ factory_height: .res MAX_FACTORIES           ; Number of rows
 
 factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, paused, crafting, rotation)
     IS_PLACED = %10000000 ;factory placed bit 0
-    CRAFTING = %00100000  ;factory is crafting a potion (cooldown) bit 2
+    CRAFTING = %01000000  ;factory is crafting a potion (cooldown) bit 2
     ROTATION_MASK = %00000011 ;lowest 2 bits contain the rotation
         ROT_0 = %00000000              ; 0 degrees
         ROT_90 = %00000001             ; 90 degrees
@@ -145,21 +147,23 @@ factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, pa
 .endproc                     ; End subroutine
 
 .proc FactoryCreatePotion   ; Create potion sprite
-    LDX #$00                     ; Start looking for an empty slot in OAM to place the potion sprite
+    LDY #$00                     ; Start looking for an empty slot in OAM to place the potion sprite
     findEmptyOAMSlot:            ; Loop to find an empty OAM slot
-    LDA oam_copy, X              ; Load the Y position of the sprite at index X
-    CMP #$00                     ; Compare it to zero (empty slot)
-    BEQ foundEmptySlot           ; If Y position is zero, the slot is empty
+    LDA oam_copy, Y             ; load the Y position of the sprite at offset Y
+    BEQ foundEmptySlot          ; zero means this OAM slot is empty
 
-    TXA                         ; Transfer X to A to increment the index
-    INX                          ; Increment the index
-    JMP findEmptyOAMSlot         ; Loop back to check the next slot
+    INY                         ; step to the next sprite (4 bytes per sprite)
+    INY                         ; ...
+    INY                         ; ...
+    INY                         ; ...
 
-    RTS                          ; Return from subroutine (no empty slot found in OAM)
+    BNE findEmptyOAMSlot        ; Y wraps to 0 after 64 sprites, so we stop when OAM is full
+    RTS                         ; OAM is full, so no potion can be created!
+
 
     foundEmptySlot:            ; Found an empty OAM slot
-    LDA factory_y, Y          ; Load the Y position of the factory
-    STA oam_copy, X           ; make the potion sprite appear at the factory's Y position
+    LDA factory_y, X          ; Load the Y position of the factory
+    STA oam_copy, Y           ; make the potion sprite appear at the factory's Y position
                               ; This also prevents the sprite from being deleted
     JSR UseMaterials          ; Call the UseMaterials subroutine to decrement the factory's inventory
     RTS                          ; Return from subroutine
@@ -266,13 +270,8 @@ factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, pa
     DEC factory_rows_left               ; Decrease row counter
     BNE newRow                         ; Continue until all rows are drawn
 
-    LDA #$00                            ; Reset horizontal scroll
-    STA $2005                            ; Write horizontal scroll
-    STA $2005                            ; Reset vertical scroll
-    
     RTS                          ; Return from subroutine
-
-
+    
     factory_tiles:                  ; Same tile repeated across all factory positions
     .byte FACTORY_TILE, FACTORY_TILE ; Top row
     .byte FACTORY_TILE, FACTORY_TILE ; Middle row
@@ -373,14 +372,23 @@ factory_state: .res MAX_FACTORIES ; Reserve 1 byte for factory state (placed, pa
     JMP deleteSprite                 ; If it is, delete the sprite (not used in factory)
 
     addPlank:                        ; Add plank to factory inventory
+    LDA factory_plank, X
+    CMP #MAX_INVENTORY
+    BCS deleteSprite                 ; If carry flag set, skip the increment (inventory full)
     INC factory_plank, X             ; Increment the plank count for the current factory
     JMP deleteSprite                 ; Delete the sprite
     
     addSand:                         ; Add sand to factory inventory
+    LDA factory_sand, X
+    CMP #MAX_INVENTORY
+    BCS deleteSprite                 ; If carry flag set, skip the increment (inventory full)
     INC factory_sand, X              ; Increment the sand count for the current factory
     JMP deleteSprite                 ; Delete the sprite 
 
     addWheat:                        ; Add wheat to factory inventory
+    LDA factory_wheat, X
+    CMP #MAX_INVENTORY
+    BCS deleteSprite                 ; If carry flag set, skip the increment (inventory full)
     INC factory_wheat, X             ; Increment the wheat count for the current factory
     JMP deleteSprite                 ; Delete the sprite 
 

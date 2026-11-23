@@ -12,6 +12,8 @@
 .import RotateFactory                  ; turn the direction that PlaceFactory uses
 .import DestroyFactory                 ; remove one factory tile (PPU address in A / X)     ONLY USE IN NMI
 
+.import InitRefinery
+.import PlaceRefinery
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
@@ -839,6 +841,23 @@ BuildRefinery:                  ; Build logic for refinery
     JMP EndBuild
 
 BuildCollection:                ; Build logic for collection
+LDA cursor_y
+    LSR
+    LSR
+    LSR                         ; y / 8
+    CLC
+    ADC #>NAMETABLE_0           ; + $20 (high byte of NAMETABLE_0)
+    TAX                         ; X = high byte
+
+    LDA cursor_y
+    AND #%00000111              ; y mod 8
+    ASL
+    ASL
+    ASL
+    ASL
+    ASL                         ; * 32
+    ORA cursor_x                ; A = low byte
+    JSR PlaceRefinery
     JMP EndBuild
 
 EndBuild:                       ; Clear the build flag
