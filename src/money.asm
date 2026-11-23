@@ -79,6 +79,9 @@ end:
 
 .endproc
 
+;; TODO:
+;; THIS FUNCTION DOES NOT WORK DONT USE!!!!
+;; 
 ;; subtracts a value from money variable
 ;; this keeps every byte between [0-99]
 ;; @param A: value to sub (THIS MUST BE A VALUE IN [0-99]!!!)
