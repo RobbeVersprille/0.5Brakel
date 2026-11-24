@@ -100,6 +100,33 @@ PaletteData:
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3E,$7E,$46,$0C,$0C,$18,$18,$18   ; 7
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$7C,$C6,$C6,$7C,$C6,$C6,$FE,$38   ; 8
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$66,$66,$3E,$06,$46,$3C   ; 9
+
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$10,$28,$28,$38,$44,$44,$44   ; A
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$38,$44,$44,$58,$44,$44,$78   ; B
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$3c,$40,$40,$40,$40,$40,$3c   ; C
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$70,$48,$44,$44,$44,$44,$78   ; D
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$3c,$40,$40,$78,$40,$40,$7c   ; E
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$3c,$40,$40,$70,$40,$40,$40   ; F
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$38,$44,$40,$5c,$44,$44,$38   ; G
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$44,$44,$44,$7c,$44,$44,$44   ; H
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$7c,$10,$10,$10,$10,$10,$7c   ; I
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$04,$04,$04,$04,$44,$44,$38   ; J
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$44,$58,$60,$60,$50,$48,$44   ; K
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$40,$40,$40,$40,$40,$40,$7c   ; L
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$28,$38,$38,$54,$44,$44,$44   ; M
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$64,$64,$54,$54,$54,$4c,$4c   ; N
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$38,$44,$44,$44,$44,$44,$38   ; O
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$38,$44,$44,$78,$40,$40,$40   ; P
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$38,$44,$44,$44,$54,$48,$34   ; Q
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$38,$44,$44,$78,$50,$48,$44   ; R
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$3c,$40,$40,$38,$04,$04,$78   ; S
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$7c,$10,$10,$10,$10,$10,$10   ; T
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$44,$44,$44,$44,$44,$44,$38   ; U
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$44,$44,$44,$28,$28,$10,$10   ; V
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$44,$44,$44,$54,$38,$38,$28   ; W
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$44,$44,$28,$10,$28,$44,$44   ; X
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$44,$44,$28,$28,$10,$10,$10   ; Y
+    .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$7c,$04,$08,$10,$20,$40,$7c   ; Z
 .endmacro                             ; expanded once in CHR0 and once in CHR1
 
 .segment "CHR0"                       ; pattern table 0 = frame A
