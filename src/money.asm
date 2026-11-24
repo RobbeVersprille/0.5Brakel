@@ -60,20 +60,19 @@ money:  .res MONEY_BYTES    ; reserve an amount of bytes to store player money
     CMP #100        ; compare current value to 100
     BCC end         ; go to the end if byte is still less than 100
 
+handleOverflow:
     ;; since previous byte was >= 100
     SEC             ; set carry for normal subtraction
     SBC #100        ; subtract 100 from the value
     STA money, X    ; store the new value back
 
-@handleOverflow:
-    ;; check overflow for next bytes
     INX             ; increment byte offset
-    CPX MONEY_BYTES ; compare current byte offset to total money bytes
-    BEQ end         ; if they are equal, go to the end
+    CPX MONEY_BYTES ; compare to total amount of bytes in money
+    BEQ end         ; if byte offset its equal to the total amount of bytes, the end is reached
 
-    INC money, X        ; increment next byte
-    BCS @handleOverflow ; if the previous increment caused an overflow, check next byte 
-
+    LDA #$01        ; load 1 in a to add to the next byte
+    JMP AddMoney    ; keep looping this function until eiter overflow did not happen or all bytes have been checked
+    
 end:
     RTS
 
