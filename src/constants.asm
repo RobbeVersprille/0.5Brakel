@@ -31,6 +31,23 @@ HUD_HEIGHT  = 7
 HUD_POS_X   = 0
 HUD_POS_Y   = SCREEN_HEIGHT - HUD_HEIGHT
 
+.enum
+    WORKER_AMOUNT_ITEM
+    FOOD_AMOUNT_ITEM
+    MONEY_AMOUNT_ITEM
+
+    TBD1_ITEM
+    CONVEYER_ITEM
+    TBD2_ITEM
+    TBD3_ITEM
+    TBD4_ITEM
+    TBD5_ITEM
+    WORKER_ITEM
+    TBD6_ITEM
+    
+    MONEY_DEBUG_ITEM
+.endenum
+
 ;; ==============================================
 ;;  MONEY CONSTANTS
 ;; ==============================================

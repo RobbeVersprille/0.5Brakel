@@ -21,7 +21,7 @@
 .include "constants.asm"
 .include "macros.asm"
 
-.export ShowHud, InitHud
+.export ShowHud, InitHud, UpdateItemAmount
 .export SelectableItemTable
 
 .import money, number, number_size
@@ -52,6 +52,8 @@ HUD_ATTRIBUTE_HEIGHT = (HUD_HEIGHT / ATTR_DIM) + 2
 
     FOOD_SIZE = 1
     food:       .res FOOD_SIZE      ; reserve 1 byte for the amount of food
+
+    temp:   .res 1
 .segment "CODE"
 
 .proc InitHud
@@ -254,7 +256,11 @@ end:
 ;; registers used: A, X, Y
 .proc DrawSegments
     LDX number_size ; byte index in reverse to get highest byte first
-
+    
+    TXA         ; transfer amount of bytes to draw to A
+    ASL         ; *2 since you need the amount in nibbles
+    STA temp    ; store this in temporary variable as the amount of blank tiles to draw at the end of the subroutine
+    
     ;; check when the drawing needs to start (first nonzero segment)
 findFirstSegment:
     DEX                     ; decrement current byte index
@@ -263,8 +269,9 @@ findFirstSegment:
     ;; since entire value is 0, only draw 1 tile with zero
     LDA #NUMBER_TILE_0  ; load first number tile into A
     STA PPU_DATA        ; store first number tile in nametable
+    DEC temp            ; decrement the temp variable containing amount of blank tiles to load at the end
 
-    RTS ; return since the byte index is not valid anymore
+    JMP fillWithBlanks  ; go to the end since the byte index is not valid anymore
 
 checkByteSegments:
     LDA number, X   ; load first 2 segments into A
@@ -281,12 +288,13 @@ checkByteSegments:
 drawUnalignedSegment:
     TYA ; reload original byte int A
 
-    CLC             ; clear carry so it doesnt interfere
-    ADC #NUMBER_TILE_0 ; add the first number tile index to the segment
-    STA PPU_DATA     ; store number tile into nametable
-    
-    DEX     ; decrement byte index
-    BMI end ; if byte index < 0, go to end of subroutine
+    CLC                 ; clear carry so it doesnt interfere
+    ADC #NUMBER_TILE_0  ; add the first number tile index to the segment
+    STA PPU_DATA        ; store number tile into nametable
+    DEC temp            ; decrement the amount of blank tiles to load at the end of subroutine
+
+    DEX                 ; decrement byte index
+    BMI fillWithBlanks  ; if byte index < 0, go to end of subroutine
 
     ;; start drawing at current byte index
 drawLoop:
@@ -302,6 +310,7 @@ drawLoop:
     CLC                 ; clear carry
     ADC #NUMBER_TILE_0  ; add index of first number tile
     STA PPU_DATA        ; store number tile into nametable
+    DEC temp            ; decrement amount of blank tiles to load at the end of subroutine
 
     TYA         ; reload segment byte into A
     AND #$0F    ; only keep the low byte
@@ -309,13 +318,68 @@ drawLoop:
     CLC                 ; clear carry
     ADC #NUMBER_TILE_0  ; add index of number tile into nametable
     STA PPU_DATA        ; store number tile into nametable
-    
+    DEC temp            ; decrement amount of blank tile to load at the end of the subroutine
+
     DEX                 ; decrement current byte index
     BPL drawLoop        ; keep drawing bytes while byte index >= 0
+
+fillWithBlanks:
+    LDX temp            ; fill amount of tile to fill with blank in X
+    BEQ end             ; if the temp variable was 0, jump to the end
+    LDA #EMPTY_HUD_TILE ; load blank tile in A
+
+@loop:
+    STA PPU_DATA    ; load blank tile in nametable
+    DEX             ; decrement amount of tile to blank out
+    BNE @loop       ; while amount of tiles to blank hasnt reached 0, keep blanking out tiles
 
 end:
     RTS
 
+.endproc
+
+;; updates the value displayed on the hud of a hud item
+;; @param A: hud item type
+;; registers used: A, X, Y
+.proc UpdateItemAmount
+    TAY ; keep type in y
+
+setPPUAddr:
+    STA temp    ; store type in temp
+
+    ;; multiply type by 3 to get ItemTable index
+    ASL         ; shift left => A *= 2
+    CLC         ; clear carry for addition
+    ADC temp    ; add the type value to the doubled value => (index * 2) + index = index * 3 
+    
+    TAX         ; transfer byte index to X
+
+    ;; set address
+    LDA ItemTable, X        ; load byte of item into a
+    ADC #<HUD_POS_NAMETABLE ; add low byte of nametable pos with nametable offset
+    TAX                     ; transfer low byte to X to store
+    LDA #>HUD_POS_NAMETABLE ; load high byte of nametable pos
+    ADC #$00                ; add carry of previous addition
+
+    STA PPU_ADDR    ; store high byte into ppuaddr
+    INX             ; increment lower byte since first byte would be pos of the icon
+    TXA             ; transfer low byte stored in X to A
+    STA PPU_ADDR    ; store low byte into ppuaddr
+
+checkWorker:
+    CPY #WORKER_AMOUNT_ITEM
+    BNE checkMoney
+    JMP DrawWorkerAmount
+checkMoney:
+    CPY #MONEY_AMOUNT_ITEM
+    BNE checkFood
+    JMP DrawMoneyAmount
+checkFood:
+    CPY #FOOD_AMOUNT_ITEM
+    BNE end
+    JMP DrawFoodAmount
+end:
+    RTS
 .endproc
 
 ;; helper function that fills the number variable in numbers.asm
@@ -323,8 +387,8 @@ end:
 ;; registers used: A, X, Y
 .proc DrawWorkerAmount
     ;; setup worker variable in numbers for decimal display
-    FillBinaryNumber Workers, WORKERS_SIZE      ; macro that fills number and number_size variables with arguments
-    JSR ConvertNumberToDecimal                      ; call function to convert loaded values into decimal repr
+    FillBinaryNumber Workers, WORKERS_SIZE  ; macro that fills number and number_size variables with arguments
+    JSR ConvertNumberToDecimal              ; call function to convert loaded values into decimal repr
 
     ;; dont JSR since DrawSegments will RTS so you skip A JSR and a RTS
     JMP DrawSegments
