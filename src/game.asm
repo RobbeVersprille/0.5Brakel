@@ -14,6 +14,7 @@
 
 .import InitRefinery
 .import PlaceRefinery
+.import RotateRefinery
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
@@ -137,6 +138,7 @@ clearOam:
     JSR InitConveyor            ; conveyor animation and items start from step 0
     JSR InitHud
     JSR InitFactory
+    JSR InitRefinery
     JSR InitMoney
     JSR InitNumbers
 
@@ -415,7 +417,7 @@ attributeLoop:
             STA oam_copy, X
             JMP endBuildModes
         SetSpriteAsRefinery:                  ; Set Sprite as refinery
-            LDA #PLACEHOLDER_TILE
+            LDA #REFINERY_TILE
             STA oam_copy, X
             JMP endBuildModes
         SetSpriteAsCollection:                ; Set Sprite as collection
@@ -579,6 +581,7 @@ attributeLoop:
     RotFactory:                   ; Rotate logic for factory
         JMP EndRotate
     RotRefinery:                  ; Rotate logic for refinery
+        JSR RotateRefinery
         JMP EndRotate
     RotCollection:                ; Rotate logic for collection
         JMP EndRotate
@@ -841,9 +844,6 @@ BuildFactory:                   ; Build logic for factory
     JMP EndBuild
 
 BuildRefinery:                  ; Build logic for refinery
-    JMP EndBuild
-
-BuildCollection:                ; Build logic for collection
 LDA cursor_y
     LSR
     LSR
@@ -861,6 +861,10 @@ LDA cursor_y
     ASL                         ; * 32
     ORA cursor_x                ; A = low byte
     JSR PlaceRefinery
+
+    JMP EndBuild
+BuildCollection:                ; Build logic for collection
+
     JMP EndBuild
 
 EndBuild:                       ; Clear the build flag

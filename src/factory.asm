@@ -16,10 +16,9 @@
 .import TransferOamData, oam_copy ; importing OAM
 .export PlaceFactory, DestroyFactory, RotateFactory, InitFactory, UpdateFactory, TakeFactoryInput
 .export factory_state       ;
-MAX_FACTORIES = 16              ;Set a limit for the number of factories in the game
 
 ;factory inventory
-MAX_INVENTORY = 255             ;Limit of 1 item that a factory can hold
+MAX_INVENTORY = 15             ;Limit of 1 resource that a factory can hold
 ITEM_WOOD = $00                 ;Wood item ID
 ITEM_STONE = $01                ;Stone item ID
 ITEM_WHEAT = $02                ;Wheat item ID

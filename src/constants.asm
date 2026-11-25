@@ -23,6 +23,18 @@ SCREEN_HEIGHT = $1E
 ATTR_DIM = 2
 
 ;; ==============================================
+;;  FACTORY CONSTANTS
+;; ==============================================
+
+MAX_FACTORIES = 16              ;Set a limit for the number of factories in the game
+
+;; ==============================================
+;;  REFINERY CONSTANTS
+;; ==============================================
+
+MAX_REFINERIES = 32 ; Maximum number of refineries allowed
+
+;; ==============================================
 ;;  HUD CONSTANTS
 ;; ==============================================
 
@@ -69,6 +81,8 @@ MONEY_BYTES = 5
     CONVEYER_LEFT
     CONVEYER_UP
 
+    REFINERY_TILE
+
     CURSOR_TILE
 
     BREAD_TILE
@@ -80,7 +94,6 @@ MONEY_BYTES = 5
     STONE_TILE
     DUVEL_TILE
     FACTORY_TILE
-    REFINERY_TILE
     
     WORKER_TILE
 

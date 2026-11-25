@@ -1,8 +1,7 @@
 .include "constants.asm"
 .import TransferOamData, oam_copy ; importing OAM
-.export InitRefinery, PlaceRefinery
+.export InitRefinery, PlaceRefinery, RotateRefinery
 ;macros
-MAX_REFINERIES = 32 ; Maximum number of refineries allowed
 ITEM_WOOD = $00                 ;Wood item ID
 ITEM_STONE = $01                ;Stone item ID
 ITEM_WHEAT = $02                ;Wheat item ID
@@ -32,11 +31,15 @@ refinery_state: .res MAX_REFINERIES         ; the state of the refinery
     LDX #$00                     ; Start at index zero
     LDA #$00                     ; Set everything to zero with this value
 
+    STA refinery_dir
 refineryInitLoop:                    ; Loop through all refinery slots
     STA refinery_wheat, X                ; Reset wheat inventory
     STA refinery_wood, X                 ; Reset wood inventory
     STA refinery_stone, X                ; Reset stone inventory
     STA refinery_output, X               ; Reset output potion
+    STA refinery_x, X
+    STA refinery_y, X
+
     INX                          ; Move to next refinery
     CPX #MAX_REFINERIES          ; Check if all refineries were initialized
     BNE refineryInitLoop           ; If not, continue the loop
@@ -61,7 +64,7 @@ refineryInitLoop:                    ; Loop through all refinery slots
     STA PPU_ADDR                      ; second address write
     LDA refinery_dir                  ; direction 0..3
     CLC                               ; clear carry before adding
-    ADC #REFINERY_TILE                ; tile index = first conveyor tile + direction
+    ADC #REFINERY_TILE                ; tile index = first refinery tile
     STA PPU_DATA                      ; write the tile (the animation never rewrites it)
 
     RTS                               ; return
