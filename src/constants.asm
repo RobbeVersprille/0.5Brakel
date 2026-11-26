@@ -37,6 +37,16 @@ HUD_POS_Y   = SCREEN_HEIGHT - HUD_HEIGHT
 
 MONEY_BYTES = 5
 
+DEBUG_COIN_AMOUNT = 50 ; amount of money given by the debug
+
+;; ==============================================
+;;  SoundEffect ENUM
+;; ==============================================
+.enum
+    SFX_BUTTON_PRESSED
+    SFX_BUTTON_UNPRESSED
+    SFX_DEATH
+.endenum
 ;; ==============================================
 ;;  PALETTE ENUM
 ;; ==============================================

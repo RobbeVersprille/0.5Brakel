@@ -9,7 +9,7 @@
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
-.import InitMoney, InitNumbers
+.import InitMoney, InitNumbers, AddMoney, SubMoney
 .import ShowHud, InitHud, SelectableItemTable
 
 .setcpu "6502"
@@ -89,7 +89,7 @@ START_ADDRESS_CURSOR_OAM = $00;
     .define FAMISTUDIO_CA65_CODE_SEGMENT CODE
     
     .include "famistudio_ca65.s"
-    .include "Songs/BtnPressed_SFX.s"
+    .include "Songs/SoundEffects.s"
     .include "Songs/Thibe_Track.s"
 ;;
 
@@ -438,13 +438,13 @@ attributeLoop:
     AND #PAUSED_FLAG    ; test the flag we just stored
     BNE now_paused
 
-    LDA #1              ; now unpaused -> SFX 1
-    JSR play_sfx
+    LDA #SFX_BUTTON_UNPRESSED   ; Load the SFX index
+    JSR play_sfx              ; Uses A to know witch SFX to play
     JMP end
 
     now_paused:
-        LDA #0              ; now paused -> SFX 0
-        JSR play_sfx    
+        LDA #SFX_BUTTON_PRESSED   ; Load the SFX index
+        JSR play_sfx              ; Uses A to know witch SFX to play
 
     end:                               ; End of the HandlePaused logic
         RTS
@@ -634,6 +634,11 @@ attributeLoop:
     AND #BUILD_FLAG
     BNE checkB                ; Build already set
 
+    ;LDA selected_building_mode
+
+    ;CMP #DEBUG_COIN_STATE
+    ;BEQ AddDebugAmount
+
     LDA flags
     ORA #BUILD_FLAG           ; set build
     STA flags
@@ -644,6 +649,12 @@ attributeLoop:
         ORA #IS_BUILDING_FLAG        ; set is building 
         STA flags
         JSR ResetCursorPos           ; Reset the cursor to the grid
+        JMP checkB
+    
+;    AddDebugAmount:
+;        LDX #$00
+;       LDA DEBUG_COIN_AMOUNT
+;        JSR AddMoney
 
 checkB:                            ; Checks B button
     LDA buttons         ; Load button input
@@ -688,6 +699,11 @@ checkSelect:                       ; Checks SELECT button
     LDA #DEPOSIT_STATE ; Set cursor to deposit
     STA selected_building_mode ; Store the new flag 
     JSR ResetCursorPos
+
+    ;; Sound code for in death
+    JSR famistudio_music_stop ; kill the background music
+    LDA #SFX_DEATH            ; Load the SFX index
+    JSR play_sfx              ; Uses A to know witch SFX to play
     
 checkBuildState:                        ; Checks the build state before continueing with the D-pad checks if in build mode skip the D-PAD checks here
     LDA flags
@@ -851,6 +867,20 @@ nmi:                               ; NMI INTERUPT
     PHA                         ; ...
 
     JSR TransferOamData         ; Transfer the OAM_Copy to the PPU
+    
+    ;LDA buttons
+    ;AND #A_BUTTON
+    ;BEQ SkipHudUpdate           ; A was not pressed
+
+    ;LDA selected_building_mode
+    ;CMP #DEBUG_COIN_STATE
+    ;BNE SkipHudUpdate
+
+    ;JSR ShowHud
+
+    ; SkipHudUpdate:
+
+
     JSR HandleBuild             ; Handles the building of selected item
     
     JSR ConveyorUpload          ; palette writes, returns PPUCTRL bit 4 in A
