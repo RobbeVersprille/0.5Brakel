@@ -53,6 +53,7 @@ HUD_POS_Y   = SCREEN_HEIGHT - HUD_HEIGHT
 ;; ==============================================
 
 MONEY_BYTES = 5
+COST_BYTES = 3
 
 ;; ==============================================
 ;;  PALETTE ENUM

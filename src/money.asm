@@ -7,6 +7,8 @@
 ;; ---------------------VARIABLES--------------------------
 ;; money:   variable containing money value every
 ;;          byte should be between [0-99]
+;; cost:    variable containing cost value, every
+;;          byte should be between [0-99]
 
 ;; --------------------SUBROUTINES-------------------------
 ;; InitMoney
@@ -24,12 +26,14 @@
 
 .include "constants.asm"
 
-.export money
+.export money, cost
 .export InitMoney, AddMoney, SubMoney
 
 .segment "BSS"
-money:  .res MONEY_BYTES    ; reserve an amount of bytes to store player money
-
+MoneyVariables:
+    money:  .res MONEY_BYTES    ; reserve an amount of bytes to store player money
+    cost:   .res COST_BYTES     ; reserve an amount of bytes to store how much something costs
+MoneyVariablesEnd:
 .segment "CODE"
 
 ;; Initialises money variable with all 0s
@@ -39,10 +43,10 @@ money:  .res MONEY_BYTES    ; reserve an amount of bytes to store player money
     LDA #$00    ; load init value in A
     TAX         ; set X to 0 to use as index for money byte
 @loop:
-    STA money, X        ; store init value into money byte at index X
-    INX                 ; increment index
-    CPX #MONEY_BYTES    ; check if index < MONEY_BYTES
-    BNE @loop           ; while index < MONEY_BYTES keep looping
+    STA money, X                                ; store init value into money byte at index X
+    INX                                         ; increment index
+    CPX #(MoneyVariablesEnd - MoneyVariables)   ; check if index < MONEY_BYTES
+    BNE @loop                                   ; while index < MONEY_BYTES keep looping
 
     RTS
 

@@ -13,6 +13,20 @@
 ;;  Draws the hud at the bottom of the screen
 ;;  registers used: A, X, Y
 
+;; UpdateItemAmount
+;;  updates the value of a HUD item displayed on the HUD
+;;  @param A: hud item type
+;;  registers used: A, X, Y
+
+;; ShowCost
+;;  shows the cost of the currently selected item
+;;  @param cost: the cost that needs to be displayed
+;;  registers used: A, X, Y
+
+;; HideCost
+;;  hides the cost amount
+;;  registers used: A, X
+
 ;; ---------------- TABLES --------------------------------
 ;; SelectableItemTable: contains all HUD items that are selectable by the cursor (related: SELECTABLE_ITEM_AMOUNT)
 
@@ -21,11 +35,12 @@
 .include "constants.asm"
 .include "macros.asm"
 
-.export ShowHud, InitHud, UpdateItemAmount
+.export ShowHud, InitHud, UpdateItemAmount, ShowCost, HideCost
 .export SelectableItemTable
 
-.import money, number, number_size
-.import ConvertNumberToDecimal
+.importzp string_ptr
+.import money, cost, number, number_size, string_size
+.import ConvertNumberToDecimal, DrawText
 
 ;; ========================================================
 ;;  LOCAL HUD CONSTANTS
@@ -338,14 +353,14 @@ end:
 
 .endproc
 
-;; updates the value displayed on the hud of a hud item
+;; updates the value of a HUD item displayed on the HUD
 ;; @param A: hud item type
 ;; registers used: A, X, Y
 .proc UpdateItemAmount
     TAY ; keep type in y
 
 setPPUAddr:
-    STA temp    ; store type in temp
+    STA temp    ; store type in temp (needs to be variable to be able to do arithmetic with A)
 
     ;; multiply type by 3 to get ItemTable index
     ASL         ; shift left => A *= 2
@@ -418,6 +433,59 @@ end:
     JMP DrawSegments                    ; draw money segments
 .endproc
 
+;; shows the cost of the currently selected item
+;; @param cost: the cost that needs to be displayed
+;; registers used: A, X, Y
+.proc ShowCost
+    ;; setup ppu_addr
+    LDA #>SHOW_COST_POS
+    STA PPU_ADDR
+    LDA #<SHOW_COST_POS
+    STA PPU_ADDR
+
+    ;; load address of string into string ptr
+    LDA #<show_cost_str ; load lower byte of address
+    STA string_ptr      ; store lower byte in string ptr to draw
+    LDA #>show_cost_str ; load high byte of address
+    STA string_ptr + 1  ; store high byte in string ptr to draw
+
+    ;; store string size for drawing
+    LDA #SHOW_COST_STR_LENGTH   ; load size of string
+    STA string_size             ; store in string_size
+
+drawTotal:
+    JSR DrawText    ; draw cost text
+
+    ;; draw cost value
+    FillBinaryNumber cost, COST_BYTES   ; fill number variable with cost
+    JSR ConvertNumberToDecimal          ; convert number variable to decimal
+    JMP DrawSegments                    ; draw cost in number variable
+
+    ; RTS => not necessary as JMP DrawSegments will RTS out of this subroutine
+
+.endproc
+
+;; hides the cost amount
+;; registers used: A, X
+.proc HideCost
+    ;; set ppu_addr
+    LDA #>SHOW_COST_POS
+    STA PPU_ADDR
+    LDA #<SHOW_COST_POS
+    STA PPU_ADDR
+
+    LDA #EMPTY_HUD_TILE     ; load tile to overwrite show cost with
+    LDX #SHOW_COST_LENGTH   ; load amount of tiles to overwrite
+
+@loop:
+    STA PPU_DATA    ; write empty tile to nametable
+    DEX             ; decrement amount of tiles to write
+    BNE @loop        ; if amount of tiles didnt reach 0, keep looping
+
+    RTS
+
+.endproc
+
 ;; Item table stores positions of hud items
 ;; Byte 1: position
 ;;      bit 0-4: X position in hud
@@ -447,3 +515,12 @@ SelectableItemTable:
 
     .byte ((5 << 5) | 30), COIN_TILE, $FF    ; reserved for money debug item
 ItemTableEnd:
+
+;; data corresponding to cost displaying on the hud, used in ShowCost, Hidecost
+SHOW_COST_POS = $238E                                       ; start position to draw in nametable
+SHOW_COST_LENGTH = SHOW_COST_STR_LENGTH + (COST_BYTES * 2)  ; max amount of bytes the total text can take up (string length + max amount of segments in cost)
+
+;; variable containing text for showing the cost
+SHOW_COST_STR_LENGTH = show_cost_str_end - show_cost_str
+show_cost_str:      .byte "cost:"
+show_cost_str_end:
