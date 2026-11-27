@@ -9,8 +9,9 @@
 
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
-.import InitMoney, InitNumbers
-.import ShowHud, InitHud, SelectableItemTable
+.import InitMoney, InitNumbers, AddMoney, SubMoney
+.import ShowHud, InitHud, SelectableItemTable, UpdateItemAmount
+.import InitText
 
 .setcpu "6502"
 
@@ -130,6 +131,7 @@ clearOam:
     JSR InitHud
     JSR InitMoney
     JSR InitNumbers
+    JSR InitText
 
     ;; code from the book
     LDA #1
