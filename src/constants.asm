@@ -156,6 +156,38 @@ MONEY_BYTES = 5
     TILE_ID_3E
     TILE_ID_3F
     TILE_ID_40
+    TILE_ID_41
+    TILE_ID_42
+    TILE_ID_43
+    TILE_ID_44
+    TILE_ID_45
+    TILE_ID_46
+    TILE_ID_47
+    TILE_ID_48
+    TILE_ID_49
+    TILE_ID_4A
+    TILE_ID_4B
+    TILE_ID_4C
+    TILE_ID_4D
+    TILE_ID_4E
+    TILE_ID_4F
+    TILE_ID_50
+    TILE_ID_51
+    TILE_ID_52
+    TILE_ID_53
+    TILE_ID_54
+    TILE_ID_55
+    TILE_ID_56
+    TILE_ID_57
+    TILE_ID_58
+    TILE_ID_59
+    TILE_ID_5A
+    TILE_ID_5B
+    TILE_ID_5C
+    TILE_ID_5D
+    TILE_ID_5E
+    TILE_ID_5F
+    TILE_ID_60
 
     ;; font tiles
     FONT_TILE_A

@@ -134,6 +134,38 @@ PaletteData:
     .res 16, $00    ; padding
     .res 16, $00    ; padding
     .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding    
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
 
     .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$10,$28,$28,$38,$44,$44,$44   ; A
     .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$38,$44,$44,$58,$44,$44,$78   ; B
