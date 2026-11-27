@@ -111,6 +111,32 @@ MONEY_BYTES = 5
     ;; item tiles
     PLACEHOLDER_TILE
 
+    TILE_ID_17
+    TILE_ID_18
+    TILE_ID_19
+    TILE_ID_1A
+    TILE_ID_1B
+    TILE_ID_1C
+    TILE_ID_1D
+    TILE_ID_1E
+    TILE_ID_1F
+    TILE_ID_20
+    TILE_ID_21
+    TILE_ID_22
+    TILE_ID_23
+    TILE_ID_24
+    TILE_ID_25
+    TILE_ID_26
+    TILE_ID_27
+    TILE_ID_28
+    TILE_ID_29
+    TILE_ID_2A
+    TILE_ID_2B
+    TILE_ID_2C
+    TILE_ID_2D
+    TILE_ID_2E
+    TILE_ID_2F
+
     ;; number tiles
     NUMBER_TILE_0
     NUMBER_TILE_1
@@ -123,6 +149,15 @@ MONEY_BYTES = 5
     NUMBER_TILE_8
     NUMBER_TILE_9
 
+    TILE_ID_3A
+    TILE_ID_3B
+    TILE_ID_3C
+    TILE_ID_3D
+    TILE_ID_3E
+    TILE_ID_3F
+    TILE_ID_40
+
+    ;; font tiles
     FONT_TILE_A
     FONT_TILE_B
     FONT_TILE_C

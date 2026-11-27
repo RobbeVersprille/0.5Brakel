@@ -90,6 +90,32 @@ PaletteData:
     .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$00,$00,$00,$00,$00,$00,$00   ; empty tile HUD
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$22,$22,$04,$08,$08,$00,$08   ; placeholder tile HUD
 
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$63,$63,$63,$63,$3E,$1C   ; 0
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$0C,$1C,$3C,$2C,$0C,$0C,$0C,$0C   ; 1
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$66,$66,$0C,$18,$3E,$3E   ; 2
@@ -100,6 +126,14 @@ PaletteData:
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3E,$7E,$46,$0C,$0C,$18,$18,$18   ; 7
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$7C,$C6,$C6,$7C,$C6,$C6,$FE,$38   ; 8
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$66,$66,$3E,$06,$46,$3C   ; 9
+
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
+    .res 16, $00    ; padding
 
     .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$10,$28,$28,$38,$44,$44,$44   ; A
     .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$00,$38,$44,$44,$58,$44,$44,$78   ; B
