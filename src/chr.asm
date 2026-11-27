@@ -126,8 +126,8 @@ PaletteData:
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$3E,$7E,$46,$0C,$0C,$18,$18,$18   ; 7
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$7C,$C6,$C6,$7C,$C6,$C6,$FE,$38   ; 8
     .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$1C,$3E,$66,$66,$3E,$06,$46,$3C   ; 9
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$60,$60,$00,$00,$60,$60,$00   ; :
 
-    .res 16, $00    ; padding
     .res 16, $00    ; padding
     .res 16, $00    ; padding
     .res 16, $00    ; padding
