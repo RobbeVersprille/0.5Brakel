@@ -71,13 +71,22 @@ PaletteData:
     ; add every non-animated tile here (grass, font, UI, buildings)
     .byte $E7,$81,$81,$00,$00,$81,$81,$E7,$00,$00,$00,$00,$00,$00,$00,$00 ; Cursor sprite
     .byte $1C,$2A,$65,$93,$C7,$AE,$5C,$38,$1C,$36,$5B,$EF,$BF,$DE,$7C,$38 ; Bread
-    .byte $08,$1C,$1A,$3E,$56,$E3,$85,$20,$00,$00,$04,$00,$28,$1C,$7A,$DF ; Coin
-    .byte $00,$3C,$66,$66,$66,$66,$3C,$00,$3C,$42,$99,$99,$99,$99,$42,$3C ; Sand
+    .byte $08,$1C,$1A,$3E,$56,$E3,$85,$20,$00,$00,$04,$00,$28,$1C,$7A,$DF ; Sand
+    .byte $00,$3C,$66,$66,$66,$66,$3C,$00,$3C,$42,$99,$99,$99,$99,$42,$3C ; Coin
     .byte $04,$0A,$06,$0C,$20,$30,$C0,$00,$00,$04,$09,$12,$3C,$70,$20,$40 ; Wheat
     .byte $0C,$12,$27,$4E,$DC,$F8,$70,$20,$0C,$1E,$3D,$7A,$F4,$A8,$50,$20 ; Planks
     .byte $1C,$3A,$79,$F5,$CB,$96,$FE,$7C,$1C,$26,$47,$8F,$BF,$FE,$FE,$7C ; Logs
     .byte $0C,$5E,$3B,$5F,$A6,$84,$48,$30,$0C,$52,$35,$79,$FE,$FC,$78,$30 ; Stone
     .byte $FF,$7E,$42,$81,$81,$66,$18,$7E,$81,$42,$7E,$FF,$FF,$7E,$18,$7E ; DUVEL
+    .byte $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF ; Factory
+
+    ; ;non animated 2x2 meta tile of factory
+    ; .byte $00,$31,$00,$00,$B5,$42,$21,$10,$31,$00,$31,$31,$84,$F7,$F7,$F7   ; top-left factory
+    ; .byte $08,$00,$00,$02,$72,$72,$70,$70,$FF,$FF,$FF,$FD,$FD,$8D,$8F,$8F   ; top-right factory 
+    ; .byte $00,$8E,$00,$00,$AE,$10,$08,$84,$8E,$00,$8E,$8E,$20,$BE,$BE,$BE   ; bottom-left factory
+    ; .byte $42,$01,$00,$40,$4E,$4E,$0E,$0E,$FE,$FF,$FF,$BF,$BF,$B1,$F1,$F1   ; bittom-right factory
+
+    ;.byte $18,$3C,$7E,$FF,$FF,$E7,$E7,$FF,$18,$3C,$7E,$FF,$FF,$E7,$E7,$FF ; Refinery
     
     .byte $18,$18,$4E,$39,$08,$14,$14,$12,$00,$00,$77,$77,$00,$00,$00,$36   ; worker tile
 
@@ -111,6 +120,8 @@ PaletteData:
 .byte $FF,$33,$66,$CC,$CC,$66,$33,$FF,$FF,$CC,$99,$33,$33,$99,$CC,$FF ; tile $03 left  A <
 .byte $99,$BD,$E7,$C3,$99,$BD,$E7,$C3,$E7,$C3,$99,$BD,$E7,$C3,$99,$BD ; tile $04 up    A ^
 
+.byte $FF,$F3,$B7,$9F,$F9,$ED,$CF,$FF,$FF,$CF,$C9,$F9,$9F,$93,$F3,$FF
+
 StaticTiles                           ; Expand StaticTiles macro here for CHR0
 
 .segment "CHR1"                       ; pattern table 1 = frame B
@@ -121,5 +132,7 @@ StaticTiles                           ; Expand StaticTiles macro here for CHR0
 .byte $99,$C3,$E7,$BD,$99,$C3,$E7,$BD,$E7,$BD,$99,$C3,$E7,$BD,$99,$C3 ; tile $02 down  B v
 .byte $FF,$66,$CC,$99,$99,$CC,$66,$FF,$FF,$99,$33,$66,$66,$33,$99,$FF ; tile $03 left  B <
 .byte $BD,$E7,$C3,$99,$BD,$E7,$C3,$99,$C3,$99,$BD,$E7,$C3,$99,$BD,$E7 ; tile $04 up    B ^
+
+.byte $FF,$DB,$99,$FF,$FF,$99,$DB,$FF,$FF,$E7,$E7,$99,$99,$E7,$E7,$FF
 
 StaticTiles                           ; Expand StaticTiles macro here for CHR1
