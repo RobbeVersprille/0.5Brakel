@@ -7,11 +7,20 @@
 .import RemoveConveyor                ; remove one conveyor tile (PPU address in A / X)     ONLY USE IN NMI
 .importzp conveyor_dir                ; zp variable for conveyor direction
 
+.import InitFactory, UpdateFactory                   
+.import PlaceFactory                   ; write one factory tile (PPU address in A / X)      ONLY USE IN NMI
+.import RotateFactory                  ; turn the direction that PlaceFactory uses
+.import DestroyFactory                 ; remove one factory tile (PPU address in A / X)     ONLY USE IN NMI
+
+.import InitRefinery
+.import PlaceRefinery
+.import RotateRefinery
+
 .import PaletteData ; import the pallete data from chr.asm
 .import InitOamData, TransferOamData, oam_copy ; importing the OAMDMA logic
 .import InitMoney, InitNumbers, AddMoney, SubMoney
 .import ShowHud, InitHud, SelectableItemTable, UpdateItemAmount
-.import InitText
+.import InitText, cost, AddMoney, SubMoney, ShowCost, HideCost
 
 .setcpu "6502"
 
@@ -129,6 +138,8 @@ clearOam:
     JSR InitCursor
     JSR InitConveyor            ; conveyor animation and items start from step 0
     JSR InitHud
+    JSR InitFactory
+    JSR InitRefinery
     JSR InitMoney
     JSR InitNumbers
     JSR InitText
@@ -194,6 +205,8 @@ reset_scroll:
     LDA flags
     AND #PAUSED_FLAG               ; check bit 0 of the flags is set
     BNE end                        ; Game paused skip al other btn handling (TODO CHECK: for now)
+
+    JSR UpdateFactory
 
     JSR HandleButtonInput          ; Handles the button input and sets or calls the according flags/subroutines
 
@@ -402,7 +415,7 @@ attributeLoop:
             STA oam_copy, X
             JMP endBuildModes
         SetSpriteAsRefinery:                  ; Set Sprite as refinery
-            LDA #PLACEHOLDER_TILE
+            LDA #REFINERY_TILE
             STA oam_copy, X
             JMP endBuildModes
         SetSpriteAsCollection:                ; Set Sprite as collection
@@ -566,6 +579,7 @@ attributeLoop:
     RotFactory:                   ; Rotate logic for factory
         JMP EndRotate
     RotRefinery:                  ; Rotate logic for refinery
+        JSR RotateRefinery
         JMP EndRotate
     RotCollection:                ; Rotate logic for collection
         JMP EndRotate
@@ -828,9 +842,27 @@ BuildFactory:                   ; Build logic for factory
     JMP EndBuild
 
 BuildRefinery:                  ; Build logic for refinery
-    JMP EndBuild
+LDA cursor_y
+    LSR
+    LSR
+    LSR                         ; y / 8
+    CLC
+    ADC #>NAMETABLE_0           ; + $20 (high byte of NAMETABLE_0)
+    TAX                         ; X = high byte
 
+    LDA cursor_y
+    AND #%00000111              ; y mod 8
+    ASL
+    ASL
+    ASL
+    ASL
+    ASL                         ; * 32
+    ORA cursor_x                ; A = low byte
+    JSR PlaceRefinery
+
+    JMP EndBuild
 BuildCollection:                ; Build logic for collection
+
     JMP EndBuild
 
 EndBuild:                       ; Clear the build flag

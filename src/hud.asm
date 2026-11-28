@@ -63,7 +63,7 @@ HUD_ATTRIBUTE_HEIGHT = (HUD_HEIGHT / ATTR_DIM) + 2
 
 .segment "BSS"
     WORKERS_SIZE = 1
-    Workers:  .res WORKERS_SIZE     ; reserve 1 byte for the amount of Workers
+    workers:  .res WORKERS_SIZE     ; reserve 1 byte for the amount of workers
 
     FOOD_SIZE = 1
     food:       .res FOOD_SIZE      ; reserve 1 byte for the amount of food
@@ -77,7 +77,7 @@ HUD_ATTRIBUTE_HEIGHT = (HUD_HEIGHT / ATTR_DIM) + 2
     STA food
 
     LDA #69
-    STA Workers
+    STA workers
 
     RTS
 
@@ -402,7 +402,7 @@ end:
 ;; registers used: A, X, Y
 .proc DrawWorkerAmount
     ;; setup worker variable in numbers for decimal display
-    FillBinaryNumber Workers, WORKERS_SIZE  ; macro that fills number and number_size variables with arguments
+    FillBinaryNumber workers, WORKERS_SIZE  ; macro that fills number and number_size variables with arguments
     JSR ConvertNumberToDecimal              ; call function to convert loaded values into decimal repr
 
     ;; dont JSR since DrawSegments will RTS so you skip A JSR and a RTS
